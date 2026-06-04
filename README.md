@@ -1,0 +1,60 @@
+# Companies House Goldmine
+
+Companies House Goldmine is a modern business intelligence dashboard for analyzing newly registered UK companies through the Companies House API.
+
+## Features
+
+- Server-side Companies House API integration with Basic Authentication
+- Date filters for today, yesterday, last 7 days, last 30 days, and last 60 days
+- Company table with search, sorting, and pagination
+- Simple stats row for total companies, top city, top SIC, and AI companies
+- MVP insight cards for top industries, top regions, and growth trends
+- Clean white MVP interface
+- Loading skeletons, error handling, empty states, and no-results states
+
+## Tech Stack
+
+- Next.js 15 App Router
+- TypeScript
+- Tailwind CSS
+- shadcn/ui-style components
+- Recharts
+- Server-side API routes
+
+## Setup
+
+1. Install dependencies:
+
+```bash
+npm install
+```
+
+2. Create an environment file:
+
+```bash
+cp .env.example .env.local
+```
+
+3. Add your Companies House API key:
+
+```bash
+COMPANIES_HOUSE_API_KEY=your_companies_house_api_key_here
+```
+
+4. Start the development server:
+
+```bash
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000).
+
+## API Security
+
+All Companies House requests run through `app/api/companies/route.ts`. The API key is read only from `process.env.COMPANIES_HOUSE_API_KEY` and is sent with Basic Authentication where the key is the username and the password is blank.
+
+The browser never receives the API key.
+
+## Demo Mode
+
+If `COMPANIES_HOUSE_API_KEY` is not set, the application returns local demo data from the server route so the dashboard can still be previewed.

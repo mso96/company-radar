@@ -1,0 +1,56 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 5%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 5%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 5%;
+    --primary: 0 0% 5%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 73 100% 50%;
+    --secondary-foreground: 0 0% 5%;
+    --muted: 0 0% 95%;
+    --muted-foreground: 0 0% 35%;
+    --accent: 266 85% 68%;
+    --accent-foreground: 0 0% 5%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 5%;
+    --input: 0 0% 5%;
+    --ring: 0 0% 5%;
+    --chart-1: 266 85% 68%;
+    --chart-2: 73 100% 50%;
+    --chart-3: 28 100% 60%;
+    --chart-4: 62 100% 50%;
+    --chart-5: 176 74% 45%;
+    --radius: 0.25rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    background-image:
+      linear-gradient(hsl(var(--muted)) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--muted)) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+
+  .font-neo-grotesque {
+    font-family:
+      "Helvetica Neue",
+      Helvetica,
+      Arial,
+      "Inter",
+      ui-sans-serif,
+      system-ui,
+      sans-serif;
+  }
+}
