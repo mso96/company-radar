@@ -79,3 +79,8 @@ npm run deploy
 ```
 
 Add `COMPANIES_HOUSE_API_KEY` in Cloudflare as a secret or environment variable. Do not prefix it with `NEXT_PUBLIC_`.
+
+Set it in both Cloudflare places if the dashboard shows both:
+
+- Build variables and secrets
+- Runtime variables and secrets

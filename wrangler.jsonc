@@ -3,7 +3,12 @@
   "main": ".open-next/worker.js",
   "name": "company-radar",
   "compatibility_date": "2026-06-05",
-  "compatibility_flags": ["nodejs_compat"],
+  "compatibility_flags": [
+    "nodejs_compat",
+    "nodejs_compat_populate_process_env",
+    "enable_nodejs_process_v2"
+  ],
+  "keep_vars": true,
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"

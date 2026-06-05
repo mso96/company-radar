@@ -97,6 +97,12 @@ export async function fetchCompanies(range: DateRangeKey): Promise<CompaniesResp
   const dateRange = getDateRange(range)
 
   if (!apiKey) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(
+        "COMPANIES_HOUSE_API_KEY is missing in the production runtime environment."
+      )
+    }
+
     const companies = getDemoCompanies(dateRange.end)
     return {
       companies,
