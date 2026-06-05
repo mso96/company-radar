@@ -222,32 +222,32 @@ export function Dashboard() {
             <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               <InsightChart
                 title="Top Industries"
-                description="Most common SIC categories"
+                description="Most common SIC categories in sampled records"
                 data={insights.industryDistribution.slice(0, 5)}
                 color="hsl(var(--chart-1))"
               />
               <InsightChart
                 title="Top Regions"
-                description="Company formation by region"
+                description="Regional split in sampled records"
                 data={insights.regionalDistribution.slice(0, 5)}
                 color="hsl(var(--chart-3))"
               />
               <InsightChart
                 title="Top Cities"
-                description="Most active company locations"
+                description="Most active locations in sampled records"
                 data={insights.topCities.slice(0, 5)}
                 color="hsl(var(--chart-2))"
               />
               <GrowthTrendCard data={insights.registrationTrend} />
               <InsightChart
                 title="Company Types"
-                description="Legal structures being registered"
+                description="Legal structures in sampled records"
                 data={insights.companyTypeDistribution}
                 color="hsl(var(--chart-4))"
               />
               <InsightChart
                 title="Keyword Signals"
-                description="Names containing opportunity keywords"
+                description="Opportunity keywords in sampled records"
                 data={insights.keywordMatches.filter((point) => point.value > 0).slice(0, 5)}
                 color="hsl(var(--chart-5))"
               />
@@ -353,7 +353,7 @@ function StatsRow({ insights }: { insights: CompaniesResponse["insights"] }) {
     {
       label: "Top City",
       value: insights.topCities[0]?.name ?? "None",
-      detail: `${formatCompanyCount(insights.topCities[0]?.value ?? 0)}`,
+      detail: `${formatSampleCount(insights.topCities[0]?.value ?? 0)}`,
       icon: MapPin,
     },
     {
@@ -365,7 +365,7 @@ function StatsRow({ insights }: { insights: CompaniesResponse["insights"] }) {
     {
       label: "Hot Sector",
       value: activityCount.toLocaleString(),
-      detail: `${topActivity} is heating up`,
+      detail: `${topActivity} leads the sampled records`,
       icon: Flame,
     },
   ]
@@ -462,7 +462,7 @@ function ChartTooltip({
     <div className="max-w-[240px] rounded-md border-2 bg-background px-3 py-2 text-xs shadow-[3px_3px_0_0_hsl(var(--foreground))]">
       <p className="line-clamp-2 font-semibold leading-4">{label}</p>
       <p className="mt-1 text-[11px] font-medium text-muted-foreground">
-        companies: {payload[0]?.value}
+        sampled records: {payload[0]?.value}
       </p>
     </div>
   )
@@ -803,6 +803,10 @@ function sicDescription(code: string) {
 
 function formatCompanyCount(count: number) {
   return `${count.toLocaleString()} ${count === 1 ? "company" : "companies"}`
+}
+
+function formatSampleCount(count: number) {
+  return `${count.toLocaleString()} sampled ${count === 1 ? "record" : "records"}`
 }
 
 function truncateLabel(value: string) {
