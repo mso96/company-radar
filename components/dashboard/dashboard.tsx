@@ -219,30 +219,38 @@ export function Dashboard() {
 
             <BusinessActivitiesCard activities={insights.topActivities} />
 
-            <section className="grid gap-4 lg:grid-cols-3">
+            <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               <InsightChart
                 title="Top Industries"
                 description="Most common SIC categories"
                 data={insights.industryDistribution.slice(0, 5)}
                 color="hsl(var(--chart-1))"
               />
-              <div className="flex flex-col gap-4">
-                <InsightChart
-                  title="Top Regions"
-                  description="Company formation by region"
-                  data={insights.regionalDistribution.slice(0, 5)}
-                  color="hsl(var(--chart-3))"
-                  height={168}
-                />
-                <InsightChart
-                  title="Top Cities"
-                  description="Most active company locations"
-                  data={insights.topCities.slice(0, 5)}
-                  color="hsl(var(--chart-2))"
-                  height={168}
-                />
-              </div>
+              <InsightChart
+                title="Top Regions"
+                description="Company formation by region"
+                data={insights.regionalDistribution.slice(0, 5)}
+                color="hsl(var(--chart-3))"
+              />
+              <InsightChart
+                title="Top Cities"
+                description="Most active company locations"
+                data={insights.topCities.slice(0, 5)}
+                color="hsl(var(--chart-2))"
+              />
               <GrowthTrendCard data={insights.registrationTrend} />
+              <InsightChart
+                title="Company Types"
+                description="Legal structures being registered"
+                data={insights.companyTypeDistribution}
+                color="hsl(var(--chart-4))"
+              />
+              <InsightChart
+                title="Keyword Signals"
+                description="Names containing opportunity keywords"
+                data={insights.keywordMatches.filter((point) => point.value > 0).slice(0, 5)}
+                color="hsl(var(--chart-5))"
+              />
             </section>
 
             <CompaniesTable
@@ -692,8 +700,8 @@ function DashboardSkeleton() {
           </Card>
         ))}
       </div>
-      <div className="grid gap-4 lg:grid-cols-3">
-        {Array.from({ length: 3 }).map((_, index) => (
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {Array.from({ length: 6 }).map((_, index) => (
           <Card key={index}>
             <CardHeader>
               <Skeleton className="h-5 w-32" />

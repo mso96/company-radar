@@ -327,6 +327,9 @@ function buildInsights(
   }))
   const industryDistribution = topSicCodes.slice(0, 5)
   const fastestGrowingSectors = topSicCodes.slice(0, 5)
+  const companyTypeDistribution = countBy(
+    companies.map((company) => formatCompanyType(company.type))
+  ).slice(0, 5)
 
   return {
     totalCompanies,
@@ -338,6 +341,7 @@ function buildInsights(
     keywordMatches,
     industryDistribution,
     regionalDistribution: topRegions,
+    companyTypeDistribution,
     registrationTrend,
     businessInsights: [
       makeInsight("Most active industries", topSicCodes),
@@ -374,6 +378,18 @@ function makeInsight(label: string, points: DistributionPoint[]) {
 
 function labelSicCode(code: string) {
   return SIC_LABELS[code] ? `${code} - ${SIC_LABELS[code]}` : code
+}
+
+function formatCompanyType(type: string) {
+  const labels: Record<string, string> = {
+    ltd: "Limited company",
+    llp: "LLP",
+    "private-limited-guarant-nsc": "Guarantee company",
+    plc: "Public limited company",
+    "private-unlimited": "Unlimited company",
+  }
+
+  return labels[type] ?? type.replaceAll("-", " ")
 }
 
 function cityFromLocation(location: string) {

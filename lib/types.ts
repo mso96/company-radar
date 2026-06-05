@@ -38,6 +38,7 @@ export interface InsightSummary {
   keywordMatches: DistributionPoint[]
   industryDistribution: DistributionPoint[]
   regionalDistribution: DistributionPoint[]
+  companyTypeDistribution: DistributionPoint[]
   registrationTrend: TrendPoint[]
   businessInsights: string[]
 }
