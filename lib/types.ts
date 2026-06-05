@@ -1,4 +1,4 @@
-export type DateRangeKey = "today" | "yesterday" | "last7" | "last30" | "last60"
+export type DateRangeKey = "today" | "yesterday" | "last7" | "last30"
 
 export interface CompanyRecord {
   companyName: string

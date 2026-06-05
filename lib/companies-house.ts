@@ -1,4 +1,4 @@
-import { addDays, eachDayOfInterval, format, parseISO, subDays } from "date-fns"
+import { eachDayOfInterval, format, parseISO, subDays } from "date-fns"
 import type {
   CompaniesResponse,
   CompanyRecord,
@@ -42,10 +42,13 @@ const REGION_HINTS: Array<[string, string]> = [
   ["belfast", "Northern Ireland"],
 ]
 
-const COMPANIES_HOUSE_PAGE_SIZE = 5000
-const MAX_COMPANIES_HOUSE_PAGES = 40
 const MAX_COMPANIES_HOUSE_RETRIES = 3
-const MAX_PAGES_PER_WINDOW = 2
+const SAMPLE_SIZES: Record<DateRangeKey, number> = {
+  today: 5000,
+  yesterday: 5000,
+  last7: 250,
+  last30: 100,
+}
 
 interface CompaniesHouseItem {
   company_name?: string
@@ -93,7 +96,6 @@ export function getDateRange(range: DateRangeKey) {
   const daysByRange: Record<Exclude<DateRangeKey, "today" | "yesterday">, number> = {
     last7: 6,
     last30: 29,
-    last60: 59,
   }
 
   return {
@@ -122,197 +124,56 @@ export async function fetchCompanies(range: DateRangeKey): Promise<CompaniesResp
     }
   }
 
-  const rangeResult = await fetchAllCompaniesForRange(
-    apiKey,
-    dateRange.start,
-    dateRange.end
-  )
-  const companiesForTable = rangeResult.companies.slice(0, 1000)
-  const registrationTrend = await fetchRegistrationTrend(
+  const dailyResults = await fetchCompaniesByDay(
     apiKey,
     dateRange.start,
     dateRange.end,
-    range,
-    rangeResult.hits
+    SAMPLE_SIZES[range]
   )
+  const companiesForInsights = dailyResults.flatMap((result) => result.companies)
+  const companiesForTable = companiesForInsights.slice(0, 1000)
+  const totalCompanies = dailyResults.reduce((sum, result) => sum + result.hits, 0)
+  const registrationTrend = dailyResults
+    .map((result) => ({ date: result.date, registrations: result.hits }))
+    .sort((a, b) => a.date.localeCompare(b.date))
 
   return {
     companies: companiesForTable,
-    insights: buildInsights(rangeResult.companies, rangeResult.hits, registrationTrend),
+    insights: buildInsights(companiesForInsights, totalCompanies, registrationTrend),
     source: "api",
     dateRange,
   }
 }
 
-async function fetchRegistrationTrend(
-  apiKey: string,
-  start: string,
-  end: string,
-  range: DateRangeKey,
-  rangeTotal: number
-) {
-  if (range === "today" || range === "yesterday") {
-    return [{ date: end, registrations: rangeTotal }]
-  }
-
-  if (range === "last60") {
-    return fetchCompanyBuckets(apiKey, start, end, 6)
-  }
-
-  const dailyResults = await fetchCompaniesByDay(apiKey, start, end)
-  return dailyResults
-    .map((result) => ({ date: result.date, registrations: result.hits }))
-    .sort((a, b) => a.date.localeCompare(b.date))
-}
-
 async function fetchCompaniesByDay(
   apiKey: string,
   start: string,
-  end: string
+  end: string,
+  sampleSize: number
 ) {
   const dates = eachDayOfInterval({ start: parseISO(start), end: parseISO(end) })
     .map((date) => format(date, "yyyy-MM-dd"))
     .reverse()
 
   const results: DailyCompaniesResult[] = []
-  const batchSize = 3
+  const batchSize = 2
 
   for (let index = 0; index < dates.length; index += batchSize) {
     const batch = dates.slice(index, index + batchSize)
     const batchResults = await Promise.all(
-      batch.map((date) => fetchCompaniesForDate(apiKey, date))
+      batch.map((date) => fetchCompaniesForDate(apiKey, date, sampleSize))
     )
     results.push(...batchResults)
   }
 
   return results
-}
-
-async function fetchCompanyBuckets(
-  apiKey: string,
-  start: string,
-  end: string,
-  bucketDays: number
-) {
-  const buckets: Array<{ start: string; end: string }> = []
-  let cursor = parseISO(start)
-  const endDate = parseISO(end)
-
-  while (cursor <= endDate) {
-    const bucketStart = cursor
-    const bucketEnd = addDays(bucketStart, bucketDays - 1)
-    const cappedEnd = bucketEnd > endDate ? endDate : bucketEnd
-
-    buckets.push({
-      start: format(bucketStart, "yyyy-MM-dd"),
-      end: format(cappedEnd, "yyyy-MM-dd"),
-    })
-
-    cursor = addDays(cappedEnd, 1)
-  }
-
-  const results: TrendPoint[] = []
-  const batchSize = 3
-
-  for (let index = 0; index < buckets.length; index += batchSize) {
-    const batch = buckets.slice(index, index + batchSize)
-    const batchResults = await Promise.all(
-      batch.map(async (bucket) => {
-        const result = await fetchCompaniesForRange(
-          apiKey,
-          bucket.start,
-          bucket.end,
-          1
-        )
-        const label = bucket.start === bucket.end ? bucket.start : `${bucket.start} to ${bucket.end}`
-        return { date: label, registrations: result.hits }
-      })
-    )
-    results.push(...batchResults)
-  }
-
-  return results
-}
-
-async function fetchAllCompaniesForRange(
-  apiKey: string,
-  start: string,
-  end: string
-): Promise<CompaniesQueryResult> {
-  return fetchAllCompaniesForWindow(apiKey, start, end)
-}
-
-async function fetchAllCompaniesForWindow(
-  apiKey: string,
-  start: string,
-  end: string
-): Promise<CompaniesQueryResult> {
-  const firstPage = await fetchCompaniesHouse(
-    apiKey,
-    start,
-    end,
-    COMPANIES_HOUSE_PAGE_SIZE,
-    0
-  )
-  const hits = firstPage.hits ?? firstPage.items?.length ?? 0
-  const pageCount = Math.ceil(hits / COMPANIES_HOUSE_PAGE_SIZE)
-
-  if (pageCount > MAX_COMPANIES_HOUSE_PAGES) {
-    throw new Error(
-      `Selected range is too large to aggregate accurately on Cloudflare. It needs ${pageCount} Companies House pages.`
-    )
-  }
-
-  if (pageCount > MAX_PAGES_PER_WINDOW) {
-    if (start === end) {
-      throw new Error(
-        `Companies House returned too many results for a single day (${start}).`
-      )
-    }
-
-    const dates = eachDayOfInterval({ start: parseISO(start), end: parseISO(end) })
-    const midpoint = Math.floor(dates.length / 2)
-    const leftStart = format(dates[0], "yyyy-MM-dd")
-    const leftEnd = format(dates[midpoint - 1], "yyyy-MM-dd")
-    const rightStart = format(dates[midpoint], "yyyy-MM-dd")
-    const rightEnd = format(dates[dates.length - 1], "yyyy-MM-dd")
-
-    const [left, right] = await Promise.all([
-      fetchAllCompaniesForWindow(apiKey, leftStart, leftEnd),
-      fetchAllCompaniesForWindow(apiKey, rightStart, rightEnd),
-    ])
-
-    return {
-      companies: [...left.companies, ...right.companies],
-      hits: left.hits + right.hits,
-    }
-  }
-
-  const companies = (firstPage.items ?? []).map(normalizeCompany)
-  const startIndexes = Array.from(
-    { length: Math.max(0, pageCount - 1) },
-    (_, index) => (index + 1) * COMPANIES_HOUSE_PAGE_SIZE
-  )
-
-  for (const startIndex of startIndexes) {
-    const page = await fetchCompaniesHouse(
-      apiKey,
-      start,
-      end,
-      COMPANIES_HOUSE_PAGE_SIZE,
-      startIndex
-    )
-    companies.push(...(page.items ?? []).map(normalizeCompany))
-  }
-
-  return { companies, hits }
 }
 
 async function fetchCompaniesForRange(
   apiKey: string,
   start: string,
   end: string,
-  size = 5000
+  size = 1
 ): Promise<CompaniesQueryResult> {
   const payload = await fetchCompaniesHouse(apiKey, start, end, size)
   return {
@@ -323,11 +184,12 @@ async function fetchCompaniesForRange(
 
 async function fetchCompaniesForDate(
   apiKey: string,
-  date: string
+  date: string,
+  sampleSize: number
 ): Promise<DailyCompaniesResult> {
-  const result = await fetchCompaniesForRange(apiKey, date, date, 1)
+  const result = await fetchCompaniesForRange(apiKey, date, date, sampleSize)
   return {
-    companies: [],
+    companies: result.companies,
     date,
     hits: result.hits,
   }
@@ -337,14 +199,12 @@ async function fetchCompaniesHouse(
   apiKey: string,
   start: string,
   end: string,
-  size: number,
-  startIndex = 0
+  size: number
 ): Promise<CompaniesHouseAdvancedSearchResponse> {
   const params = new URLSearchParams({
     incorporated_from: start,
     incorporated_to: end,
     size: String(size),
-    start_index: String(startIndex),
   })
 
   const url = `https://api.company-information.service.gov.uk/advanced-search/companies?${params.toString()}`
@@ -383,7 +243,7 @@ async function fetchCompaniesHouse(
   }
 
   throw new Error(
-    `Companies House request failed with status ${lastStatus} for range ${start} to ${end} at index ${startIndex}.`
+    `Companies House request failed with status ${lastStatus} for range ${start} to ${end}.`
   )
 }
 

@@ -66,7 +66,6 @@ import { SIC_LABELS } from "@/lib/sic-codes"
 import type { CompaniesResponse, CompanyRecord, DateRangeKey } from "@/lib/types"
 
 const DATE_FILTERS: Array<{ label: string; value: DateRangeKey }> = [
-  { label: "Last 60 Days", value: "last60" },
   { label: "Last 30 Days", value: "last30" },
   { label: "Last 7 Days", value: "last7" },
   { label: "Today", value: "today" },
@@ -83,7 +82,7 @@ const ACCENT_BACKGROUNDS = [
 ]
 
 export function Dashboard() {
-  const [range, setRange] = React.useState<DateRangeKey>("last60")
+  const [range, setRange] = React.useState<DateRangeKey>("last30")
   const [data, setData] = React.useState<CompaniesResponse | null>(null)
   const [isLoading, setIsLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
@@ -222,32 +221,32 @@ export function Dashboard() {
             <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               <InsightChart
                 title="Top Industries"
-                description="Most common SIC categories"
+                description="Most common SIC categories in analyzed filings"
                 data={insights.industryDistribution.slice(0, 5)}
                 color="hsl(var(--chart-1))"
               />
               <InsightChart
                 title="Top Regions"
-                description="Company formation by region"
+                description="Regional split in analyzed filings"
                 data={insights.regionalDistribution.slice(0, 5)}
                 color="hsl(var(--chart-3))"
               />
               <InsightChart
                 title="Top Cities"
-                description="Most active company locations"
+                description="Most active locations in analyzed filings"
                 data={insights.topCities.slice(0, 5)}
                 color="hsl(var(--chart-2))"
               />
               <GrowthTrendCard data={insights.registrationTrend} />
               <InsightChart
                 title="Company Types"
-                description="Legal structures being registered"
+                description="Legal structures in analyzed filings"
                 data={insights.companyTypeDistribution}
                 color="hsl(var(--chart-4))"
               />
               <InsightChart
                 title="Keyword Signals"
-                description="Names containing opportunity keywords"
+                description="Opportunity keywords in analyzed filings"
                 data={insights.keywordMatches.filter((point) => point.value > 0).slice(0, 5)}
                 color="hsl(var(--chart-5))"
               />
@@ -353,7 +352,7 @@ function StatsRow({ insights }: { insights: CompaniesResponse["insights"] }) {
     {
       label: "Top City",
       value: insights.topCities[0]?.name ?? "None",
-      detail: `${formatCompanyCount(insights.topCities[0]?.value ?? 0)}`,
+      detail: `${formatAnalyzedCount(insights.topCities[0]?.value ?? 0)}`,
       icon: MapPin,
     },
     {
@@ -365,7 +364,7 @@ function StatsRow({ insights }: { insights: CompaniesResponse["insights"] }) {
     {
       label: "Hot Sector",
       value: activityCount.toLocaleString(),
-      detail: topActivity,
+      detail: `${topActivity} leads analyzed filings`,
       icon: Flame,
     },
   ]
@@ -462,7 +461,7 @@ function ChartTooltip({
     <div className="max-w-[240px] rounded-md border-2 bg-background px-3 py-2 text-xs shadow-[3px_3px_0_0_hsl(var(--foreground))]">
       <p className="line-clamp-2 font-semibold leading-4">{label}</p>
       <p className="mt-1 text-[11px] font-medium text-muted-foreground">
-        companies: {payload[0]?.value}
+        analyzed filings: {payload[0]?.value}
       </p>
     </div>
   )
@@ -803,6 +802,10 @@ function sicDescription(code: string) {
 
 function formatCompanyCount(count: number) {
   return `${count.toLocaleString()} ${count === 1 ? "company" : "companies"}`
+}
+
+function formatAnalyzedCount(count: number) {
+  return `${count.toLocaleString()} analyzed ${count === 1 ? "filing" : "filings"}`
 }
 
 function truncateLabel(value: string) {

@@ -7,7 +7,6 @@ const VALID_RANGES = new Set<DateRangeKey>([
   "yesterday",
   "last7",
   "last30",
-  "last60",
 ])
 
 export async function GET(request: Request) {
