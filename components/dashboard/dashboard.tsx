@@ -341,6 +341,7 @@ function StatsRow({ insights }: { insights: CompaniesResponse["insights"] }) {
   const topSicCode = simplifySic(topSic)
   const topActivity = sicDescription(topSicCode)
   const activityCount = insights.topActivities[0]?.value ?? 0
+  const londonCount = insights.topCities.find((city) => city.name === "London")?.value ?? 0
 
   const stats = [
     {
@@ -350,9 +351,9 @@ function StatsRow({ insights }: { insights: CompaniesResponse["insights"] }) {
       icon: Building2,
     },
     {
-      label: "Top City",
-      value: insights.topCities[0]?.name ?? "None",
-      detail: `${formatAnalyzedCount(insights.topCities[0]?.value ?? 0)}`,
+      label: "London Count",
+      value: londonCount.toLocaleString(),
+      detail: `${formatCompanyCount(londonCount)}`,
       icon: MapPin,
     },
     {
@@ -802,10 +803,6 @@ function sicDescription(code: string) {
 
 function formatCompanyCount(count: number) {
   return `${count.toLocaleString()} ${count === 1 ? "company" : "companies"}`
-}
-
-function formatAnalyzedCount(count: number) {
-  return `${count.toLocaleString()} analyzed ${count === 1 ? "filing" : "filings"}`
 }
 
 function truncateLabel(value: string) {

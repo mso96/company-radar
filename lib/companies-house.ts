@@ -81,6 +81,13 @@ interface CompaniesQueryResult {
   hits: number
 }
 
+interface CompaniesRangeParams {
+  start: string
+  end: string
+  size: number
+  location?: string
+}
+
 export function getDateRange(range: DateRangeKey) {
   const now = new Date()
   if (range === "today") {
@@ -136,10 +143,21 @@ export async function fetchCompanies(range: DateRangeKey): Promise<CompaniesResp
   const registrationTrend = dailyResults
     .map((result) => ({ date: result.date, registrations: result.hits }))
     .sort((a, b) => a.date.localeCompare(b.date))
+  const exactTopCities = await fetchExactTopCities(
+    apiKey,
+    dateRange.start,
+    dateRange.end,
+    companiesForInsights
+  )
 
   return {
     companies: companiesForTable,
-    insights: buildInsights(companiesForInsights, totalCompanies, registrationTrend),
+    insights: buildInsights(
+      companiesForInsights,
+      totalCompanies,
+      registrationTrend,
+      exactTopCities
+    ),
     source: "api",
     dateRange,
   }
@@ -175,11 +193,43 @@ async function fetchCompaniesForRange(
   end: string,
   size = 1
 ): Promise<CompaniesQueryResult> {
-  const payload = await fetchCompaniesHouse(apiKey, start, end, size)
+  const payload = await fetchCompaniesHouse(apiKey, { start, end, size })
   return {
     companies: (payload.items ?? []).map(normalizeCompany),
     hits: payload.hits ?? payload.items?.length ?? 0,
   }
+}
+
+async function fetchExactTopCities(
+  apiKey: string,
+  start: string,
+  end: string,
+  companies: CompanyRecord[]
+) {
+  const candidateCities = Array.from(
+    new Set(["London", ...countBy(companies.map((company) => cityFromLocation(company.location))).slice(0, 7).map((point) => point.name)])
+  ).filter(Boolean)
+
+  const results: DistributionPoint[] = []
+
+  for (const city of candidateCities) {
+    const payload = await fetchCompaniesHouse(apiKey, {
+      start,
+      end,
+      size: 1,
+      location: city,
+    })
+
+    results.push({
+      name: city,
+      value: payload.hits ?? payload.items?.length ?? 0,
+    })
+  }
+
+  return results
+    .filter((point) => point.value > 0)
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 6)
 }
 
 async function fetchCompaniesForDate(
@@ -197,15 +247,17 @@ async function fetchCompaniesForDate(
 
 async function fetchCompaniesHouse(
   apiKey: string,
-  start: string,
-  end: string,
-  size: number
+  paramsInput: CompaniesRangeParams
 ): Promise<CompaniesHouseAdvancedSearchResponse> {
   const params = new URLSearchParams({
-    incorporated_from: start,
-    incorporated_to: end,
-    size: String(size),
+    incorporated_from: paramsInput.start,
+    incorporated_to: paramsInput.end,
+    size: String(paramsInput.size),
   })
+
+  if (paramsInput.location) {
+    params.set("location", paramsInput.location)
+  }
 
   const url = `https://api.company-information.service.gov.uk/advanced-search/companies?${params.toString()}`
   let lastStatus = 0
@@ -243,7 +295,7 @@ async function fetchCompaniesHouse(
   }
 
   throw new Error(
-    `Companies House request failed with status ${lastStatus} for range ${start} to ${end}.`
+    `Companies House request failed with status ${lastStatus} for range ${paramsInput.start} to ${paramsInput.end}.`
   )
 }
 
@@ -275,9 +327,13 @@ function normalizeCompany(item: CompaniesHouseItem): CompanyRecord {
 function buildInsights(
   companies: CompanyRecord[],
   totalCompanies = companies.length,
-  registrationTrend = buildRegistrationTrend(companies)
+  registrationTrend = buildRegistrationTrend(companies),
+  exactTopCities?: DistributionPoint[]
 ): InsightSummary {
-  const topCities = countBy(companies.map((company) => cityFromLocation(company.location))).slice(0, 6)
+  const topCities =
+    exactTopCities && exactTopCities.length
+      ? exactTopCities
+      : countBy(companies.map((company) => cityFromLocation(company.location))).slice(0, 6)
   const topRegions = countBy(companies.map((company) => company.region)).slice(0, 6)
   const topSicCodes = countBy(
     companies.flatMap((company) =>
