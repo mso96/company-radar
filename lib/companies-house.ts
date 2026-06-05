@@ -42,6 +42,9 @@ const REGION_HINTS: Array<[string, string]> = [
   ["belfast", "Northern Ireland"],
 ]
 
+const COMPANIES_HOUSE_PAGE_SIZE = 5000
+const MAX_COMPANIES_HOUSE_PAGES = 40
+
 interface CompaniesHouseItem {
   company_name?: string
   company_number?: string
@@ -117,51 +120,53 @@ export async function fetchCompanies(range: DateRangeKey): Promise<CompaniesResp
     }
   }
 
-  const periodResults = await fetchCompaniesForPeriod(
+  const rangeResult = await fetchAllCompaniesForRange(
+    apiKey,
+    dateRange.start,
+    dateRange.end
+  )
+  const companiesForTable = rangeResult.companies.slice(0, 1000)
+  const registrationTrend = await fetchRegistrationTrend(
     apiKey,
     dateRange.start,
     dateRange.end,
-    range
+    range,
+    rangeResult.hits
   )
-  const companiesForInsights = periodResults.flatMap((result) => result.companies)
-  const companiesForTable = companiesForInsights.slice(0, 1000)
-  const totalCompanies = periodResults.reduce((sum, result) => sum + result.hits, 0)
-  const registrationTrend = periodResults
-    .map((result) => ({ date: result.date, registrations: result.hits }))
-    .sort((a, b) => a.date.localeCompare(b.date))
 
   return {
     companies: companiesForTable,
-    insights: buildInsights(companiesForInsights, totalCompanies, registrationTrend),
+    insights: buildInsights(rangeResult.companies, rangeResult.hits, registrationTrend),
     source: "api",
     dateRange,
   }
 }
 
-async function fetchCompaniesForPeriod(
+async function fetchRegistrationTrend(
   apiKey: string,
   start: string,
   end: string,
-  range: DateRangeKey
+  range: DateRangeKey,
+  rangeTotal: number
 ) {
   if (range === "today" || range === "yesterday") {
-    const result = await fetchCompaniesForRange(apiKey, start, end, 5000)
-    return [{ ...result, date: end }]
+    return [{ date: end, registrations: rangeTotal }]
   }
 
   if (range === "last60") {
-    return fetchCompanyBuckets(apiKey, start, end, 3, 250)
+    return fetchCompanyBuckets(apiKey, start, end, 6)
   }
 
-  const sampleSize = range === "last7" ? 700 : 180
-  return fetchCompaniesByDay(apiKey, start, end, sampleSize)
+  const dailyResults = await fetchCompaniesByDay(apiKey, start, end)
+  return dailyResults
+    .map((result) => ({ date: result.date, registrations: result.hits }))
+    .sort((a, b) => a.date.localeCompare(b.date))
 }
 
 async function fetchCompaniesByDay(
   apiKey: string,
   start: string,
-  end: string,
-  sampleSize: number
+  end: string
 ) {
   const dates = eachDayOfInterval({ start: parseISO(start), end: parseISO(end) })
     .map((date) => format(date, "yyyy-MM-dd"))
@@ -173,7 +178,7 @@ async function fetchCompaniesByDay(
   for (let index = 0; index < dates.length; index += batchSize) {
     const batch = dates.slice(index, index + batchSize)
     const batchResults = await Promise.all(
-      batch.map((date) => fetchCompaniesForDate(apiKey, date, sampleSize))
+      batch.map((date) => fetchCompaniesForDate(apiKey, date))
     )
     results.push(...batchResults)
   }
@@ -185,8 +190,7 @@ async function fetchCompanyBuckets(
   apiKey: string,
   start: string,
   end: string,
-  bucketDays: number,
-  sampleSize: number
+  bucketDays: number
 ) {
   const buckets: Array<{ start: string; end: string }> = []
   let cursor = parseISO(start)
@@ -205,28 +209,75 @@ async function fetchCompanyBuckets(
     cursor = addDays(cappedEnd, 1)
   }
 
-  const results: DailyCompaniesResult[] = []
+  const results: TrendPoint[] = []
   const batchSize = 6
-  const recentFirstBuckets = [...buckets].reverse()
 
-  for (let index = 0; index < recentFirstBuckets.length; index += batchSize) {
-    const batch = recentFirstBuckets.slice(index, index + batchSize)
+  for (let index = 0; index < buckets.length; index += batchSize) {
+    const batch = buckets.slice(index, index + batchSize)
     const batchResults = await Promise.all(
       batch.map(async (bucket) => {
         const result = await fetchCompaniesForRange(
           apiKey,
           bucket.start,
           bucket.end,
-          sampleSize
+          1
         )
         const label = bucket.start === bucket.end ? bucket.start : `${bucket.start} to ${bucket.end}`
-        return { ...result, date: label }
+        return { date: label, registrations: result.hits }
       })
     )
     results.push(...batchResults)
   }
 
   return results
+}
+
+async function fetchAllCompaniesForRange(
+  apiKey: string,
+  start: string,
+  end: string
+): Promise<CompaniesQueryResult> {
+  const firstPage = await fetchCompaniesHouse(
+    apiKey,
+    start,
+    end,
+    COMPANIES_HOUSE_PAGE_SIZE,
+    0
+  )
+  const hits = firstPage.hits ?? firstPage.items?.length ?? 0
+  const pageCount = Math.ceil(hits / COMPANIES_HOUSE_PAGE_SIZE)
+
+  if (pageCount > MAX_COMPANIES_HOUSE_PAGES) {
+    throw new Error(
+      `Selected range is too large to aggregate accurately on Cloudflare. It needs ${pageCount} Companies House pages.`
+    )
+  }
+
+  const companies = (firstPage.items ?? []).map(normalizeCompany)
+  const startIndexes = Array.from(
+    { length: Math.max(0, pageCount - 1) },
+    (_, index) => (index + 1) * COMPANIES_HOUSE_PAGE_SIZE
+  )
+  const batchSize = 4
+
+  for (let index = 0; index < startIndexes.length; index += batchSize) {
+    const batch = startIndexes.slice(index, index + batchSize)
+    const pages = await Promise.all(
+      batch.map((startIndex) =>
+        fetchCompaniesHouse(
+          apiKey,
+          start,
+          end,
+          COMPANIES_HOUSE_PAGE_SIZE,
+          startIndex
+        )
+      )
+    )
+
+    companies.push(...pages.flatMap((page) => page.items ?? []).map(normalizeCompany))
+  }
+
+  return { companies, hits }
 }
 
 async function fetchCompaniesForRange(
@@ -244,12 +295,11 @@ async function fetchCompaniesForRange(
 
 async function fetchCompaniesForDate(
   apiKey: string,
-  date: string,
-  sampleSize: number
+  date: string
 ): Promise<DailyCompaniesResult> {
-  const result = await fetchCompaniesForRange(apiKey, date, date, sampleSize)
+  const result = await fetchCompaniesForRange(apiKey, date, date, 1)
   return {
-    companies: result.companies,
+    companies: [],
     date,
     hits: result.hits,
   }
@@ -259,12 +309,14 @@ async function fetchCompaniesHouse(
   apiKey: string,
   start: string,
   end: string,
-  size: number
+  size: number,
+  startIndex = 0
 ): Promise<CompaniesHouseAdvancedSearchResponse> {
   const params = new URLSearchParams({
     incorporated_from: start,
     incorporated_to: end,
     size: String(size),
+    start_index: String(startIndex),
   })
 
   const response = await fetch(
