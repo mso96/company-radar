@@ -44,6 +44,7 @@ const REGION_HINTS: Array<[string, string]> = [
 
 const COMPANIES_HOUSE_PAGE_SIZE = 5000
 const MAX_COMPANIES_HOUSE_PAGES = 40
+const MAX_COMPANIES_HOUSE_RETRIES = 3
 
 interface CompaniesHouseItem {
   company_name?: string
@@ -173,7 +174,7 @@ async function fetchCompaniesByDay(
     .reverse()
 
   const results: DailyCompaniesResult[] = []
-  const batchSize = 6
+  const batchSize = 3
 
   for (let index = 0; index < dates.length; index += batchSize) {
     const batch = dates.slice(index, index + batchSize)
@@ -210,7 +211,7 @@ async function fetchCompanyBuckets(
   }
 
   const results: TrendPoint[] = []
-  const batchSize = 6
+  const batchSize = 3
 
   for (let index = 0; index < buckets.length; index += batchSize) {
     const batch = buckets.slice(index, index + batchSize)
@@ -258,23 +259,16 @@ async function fetchAllCompaniesForRange(
     { length: Math.max(0, pageCount - 1) },
     (_, index) => (index + 1) * COMPANIES_HOUSE_PAGE_SIZE
   )
-  const batchSize = 4
 
-  for (let index = 0; index < startIndexes.length; index += batchSize) {
-    const batch = startIndexes.slice(index, index + batchSize)
-    const pages = await Promise.all(
-      batch.map((startIndex) =>
-        fetchCompaniesHouse(
-          apiKey,
-          start,
-          end,
-          COMPANIES_HOUSE_PAGE_SIZE,
-          startIndex
-        )
-      )
+  for (const startIndex of startIndexes) {
+    const page = await fetchCompaniesHouse(
+      apiKey,
+      start,
+      end,
+      COMPANIES_HOUSE_PAGE_SIZE,
+      startIndex
     )
-
-    companies.push(...pages.flatMap((page) => page.items ?? []).map(normalizeCompany))
+    companies.push(...(page.items ?? []).map(normalizeCompany))
   }
 
   return { companies, hits }
@@ -319,17 +313,23 @@ async function fetchCompaniesHouse(
     start_index: String(startIndex),
   })
 
-  const response = await fetch(
-    `https://api.company-information.service.gov.uk/advanced-search/companies?${params.toString()}`,
-    {
+  const url = `https://api.company-information.service.gov.uk/advanced-search/companies?${params.toString()}`
+  let lastStatus = 0
+
+  for (let attempt = 0; attempt < MAX_COMPANIES_HOUSE_RETRIES; attempt += 1) {
+    const response = await fetch(url, {
       headers: {
         Authorization: `Basic ${Buffer.from(`${apiKey}:`).toString("base64")}`,
       },
       cache: "no-store",
-    }
-  )
+    })
 
-  if (!response.ok) {
+    if (response.ok) {
+      return (await response.json()) as CompaniesHouseAdvancedSearchResponse
+    }
+
+    lastStatus = response.status
+
     if (response.status === 404) {
       return { items: [], hits: 0 }
     }
@@ -340,10 +340,21 @@ async function fetchCompaniesHouse(
       )
     }
 
-    throw new Error(`Companies House request failed with status ${response.status}`)
+    const shouldRetry = response.status >= 500 || response.status === 429
+    if (!shouldRetry || attempt === MAX_COMPANIES_HOUSE_RETRIES - 1) {
+      break
+    }
+
+    await sleep(250 * (attempt + 1))
   }
 
-  return (await response.json()) as CompaniesHouseAdvancedSearchResponse
+  throw new Error(
+    `Companies House request failed with status ${lastStatus} for range ${start} to ${end} at index ${startIndex}.`
+  )
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 function normalizeCompany(item: CompaniesHouseItem): CompanyRecord {
