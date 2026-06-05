@@ -45,6 +45,7 @@ const REGION_HINTS: Array<[string, string]> = [
 const COMPANIES_HOUSE_PAGE_SIZE = 5000
 const MAX_COMPANIES_HOUSE_PAGES = 40
 const MAX_COMPANIES_HOUSE_RETRIES = 3
+const MAX_PAGES_PER_WINDOW = 2
 
 interface CompaniesHouseItem {
   company_name?: string
@@ -238,6 +239,14 @@ async function fetchAllCompaniesForRange(
   start: string,
   end: string
 ): Promise<CompaniesQueryResult> {
+  return fetchAllCompaniesForWindow(apiKey, start, end)
+}
+
+async function fetchAllCompaniesForWindow(
+  apiKey: string,
+  start: string,
+  end: string
+): Promise<CompaniesQueryResult> {
   const firstPage = await fetchCompaniesHouse(
     apiKey,
     start,
@@ -252,6 +261,31 @@ async function fetchAllCompaniesForRange(
     throw new Error(
       `Selected range is too large to aggregate accurately on Cloudflare. It needs ${pageCount} Companies House pages.`
     )
+  }
+
+  if (pageCount > MAX_PAGES_PER_WINDOW) {
+    if (start === end) {
+      throw new Error(
+        `Companies House returned too many results for a single day (${start}).`
+      )
+    }
+
+    const dates = eachDayOfInterval({ start: parseISO(start), end: parseISO(end) })
+    const midpoint = Math.floor(dates.length / 2)
+    const leftStart = format(dates[0], "yyyy-MM-dd")
+    const leftEnd = format(dates[midpoint - 1], "yyyy-MM-dd")
+    const rightStart = format(dates[midpoint], "yyyy-MM-dd")
+    const rightEnd = format(dates[dates.length - 1], "yyyy-MM-dd")
+
+    const [left, right] = await Promise.all([
+      fetchAllCompaniesForWindow(apiKey, leftStart, leftEnd),
+      fetchAllCompaniesForWindow(apiKey, rightStart, rightEnd),
+    ])
+
+    return {
+      companies: [...left.companies, ...right.companies],
+      hits: left.hits + right.hits,
+    }
   }
 
   const companies = (firstPage.items ?? []).map(normalizeCompany)
