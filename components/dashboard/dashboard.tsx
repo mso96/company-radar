@@ -160,7 +160,7 @@ export function Dashboard() {
                 <LogoMark />
                 <div className="flex flex-col gap-1">
                   <p className="text-sm font-bold uppercase tracking-wide text-muted-foreground">
-                    Companies House Goldmine
+                    UK Company Radar
                   </p>
                   <div className="flex w-fit items-center gap-2 rounded-md border-2 bg-secondary px-3 py-1 text-xs font-semibold text-foreground">
                     <Sparkles />
@@ -226,12 +226,22 @@ export function Dashboard() {
                 data={insights.industryDistribution.slice(0, 5)}
                 color="hsl(var(--chart-1))"
               />
-              <InsightChart
-                title="Top Regions"
-                description="Company formation by region"
-                data={insights.regionalDistribution.slice(0, 5)}
-                color="hsl(var(--chart-3))"
-              />
+              <div className="flex flex-col gap-4">
+                <InsightChart
+                  title="Top Regions"
+                  description="Company formation by region"
+                  data={insights.regionalDistribution.slice(0, 5)}
+                  color="hsl(var(--chart-3))"
+                  height={168}
+                />
+                <InsightChart
+                  title="Top Cities"
+                  description="Most active company locations"
+                  data={insights.topCities.slice(0, 5)}
+                  color="hsl(var(--chart-2))"
+                  height={168}
+                />
+              </div>
               <GrowthTrendCard data={insights.registrationTrend} />
             </section>
 
@@ -272,7 +282,7 @@ function LogoMark() {
   return (
     <div
       aria-hidden="true"
-      className="relative flex size-16 shrink-0 items-center justify-center rounded-md border-2 bg-[hsl(var(--chart-2))] shadow-[4px_4px_0_0_hsl(var(--foreground))]"
+      className="relative flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-md border-2 bg-[hsl(var(--chart-2))] shadow-[4px_4px_0_0_hsl(var(--foreground))]"
     >
       <svg
         className="size-12"
@@ -281,42 +291,42 @@ function LogoMark() {
         xmlns="http://www.w3.org/2000/svg"
       >
         <path
-          d="M10 46L20 22H44L54 46H10Z"
-          fill="hsl(var(--chart-3))"
+          d="M32 10C19.85 10 10 19.85 10 32C10 44.15 19.85 54 32 54C44.15 54 54 44.15 54 32"
+          fill="hsl(var(--chart-4))"
           stroke="currentColor"
           strokeWidth="4"
-          strokeLinejoin="round"
+          strokeLinecap="round"
         />
         <path
-          d="M20 22L28 12H36L44 22"
-          fill="hsl(var(--chart-1))"
-          stroke="currentColor"
-          strokeWidth="4"
-          strokeLinejoin="round"
-        />
-        <path
-          d="M25 31H39M22 39H42"
+          d="M32 19C24.82 19 19 24.82 19 32C19 39.18 24.82 45 32 45C39.18 45 45 39.18 45 32"
           stroke="currentColor"
           strokeWidth="4"
           strokeLinecap="round"
         />
         <circle
           cx="32"
-          cy="48"
-          r="7"
-          fill="hsl(var(--chart-4))"
+          cy="32"
+          r="5"
           stroke="currentColor"
           strokeWidth="4"
+          fill="hsl(var(--chart-1))"
         />
         <path
-          d="M32 44V52M28 48H36"
+          d="M32 32L51 17"
           stroke="currentColor"
-          strokeWidth="3"
+          strokeWidth="4"
           strokeLinecap="round"
+        />
+        <path
+          d="M47 14L56 10L53 20"
+          fill="hsl(var(--chart-3))"
+          stroke="currentColor"
+          strokeWidth="4"
+          strokeLinejoin="round"
         />
       </svg>
       <div className="absolute -right-2 -top-2 rounded-md border-2 bg-background px-1.5 py-0.5 font-neo-grotesque text-xs font-black leading-none shadow-[2px_2px_0_0_hsl(var(--foreground))]">
-        CH
+        UK
       </div>
     </div>
   )
@@ -395,11 +405,13 @@ function InsightChart({
   description,
   data,
   color,
+  height = 220,
 }: {
   title: string
   description: string
   data: Array<{ name: string; value: number }>
   color: string
+  height?: number
 }) {
   return (
     <Card>
@@ -408,7 +420,7 @@ function InsightChart({
         <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={220}>
+        <ResponsiveContainer width="100%" height={height}>
           <BarChart data={data} layout="vertical" margin={{ left: 8, right: 8 }}>
             <CartesianGrid strokeDasharray="3 3" horizontal={false} />
             <XAxis type="number" allowDecimals={false} tick={{ fontSize: 12 }} />

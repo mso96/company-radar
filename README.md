@@ -1,6 +1,6 @@
-# Companies House Goldmine
+# UK Company Radar
 
-Companies House Goldmine is a modern business intelligence dashboard for analyzing newly registered UK companies through the Companies House API.
+UK Company Radar is a modern business intelligence dashboard for analyzing newly registered UK companies through the Companies House API.
 
 ## Features
 
@@ -8,7 +8,7 @@ Companies House Goldmine is a modern business intelligence dashboard for analyzi
 - Date filters for today, yesterday, last 7 days, last 30 days, and last 60 days
 - Company table with search, sorting, and pagination
 - Simple stats row for total companies, top city, top SIC, and AI companies
-- MVP insight cards for top industries, top regions, and growth trends
+- MVP insight cards for top industries, top regions, top cities, and growth trends
 - Clean white MVP interface
 - Loading skeletons, error handling, empty states, and no-results states
 
