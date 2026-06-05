@@ -333,9 +333,6 @@ function LogoMark() {
           strokeLinejoin="round"
         />
       </svg>
-      <div className="absolute -right-2 -top-2 rounded-md border-2 bg-background px-1.5 py-0.5 font-neo-grotesque text-xs font-black leading-none shadow-[2px_2px_0_0_hsl(var(--foreground))]">
-        UK
-      </div>
     </div>
   )
 }
