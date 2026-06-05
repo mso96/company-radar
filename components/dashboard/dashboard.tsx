@@ -6,9 +6,9 @@ import {
   ArrowDown,
   ArrowUp,
   BarChart3,
-  BriefcaseBusiness,
   Building2,
   CalendarDays,
+  Flame,
   MapPin,
   Search,
   Sparkles,
@@ -358,10 +358,10 @@ function StatsRow({ insights }: { insights: CompaniesResponse["insights"] }) {
       icon: BarChart3,
     },
     {
-      label: "Top Business Activity",
+      label: "Hot Sector",
       value: activityCount.toLocaleString(),
-      detail: topActivity,
-      icon: BriefcaseBusiness,
+      detail: `${topActivity} is heating up`,
+      icon: Flame,
     },
   ]
 
