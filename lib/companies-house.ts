@@ -1,4 +1,4 @@
-import { eachDayOfInterval, format, parseISO, subDays } from "date-fns"
+import { addDays, eachDayOfInterval, format, parseISO, subDays } from "date-fns"
 import type {
   CompaniesResponse,
   CompanyRecord,
@@ -68,6 +68,11 @@ interface DailyCompaniesResult {
   hits: number
 }
 
+interface CompaniesQueryResult {
+  companies: CompanyRecord[]
+  hits: number
+}
+
 export function getDateRange(range: DateRangeKey) {
   const now = new Date()
   if (range === "today") {
@@ -112,20 +117,43 @@ export async function fetchCompanies(range: DateRangeKey): Promise<CompaniesResp
     }
   }
 
-  const dailyResults = await fetchCompaniesByDay(apiKey, dateRange.start, dateRange.end)
-  const companiesForInsights = dailyResults.flatMap((result) => result.companies)
-  const companiesForTable = companiesForInsights.slice(0, 1000)
-  const totalCompanies = dailyResults.reduce((sum, result) => sum + result.hits, 0)
-  const registrationTrend = dailyResults
-    .map((result) => ({ date: result.date, registrations: result.hits }))
-    .sort((a, b) => a.date.localeCompare(b.date))
+  const rangeResult = await fetchCompaniesForRange(apiKey, dateRange.start, dateRange.end)
+  const registrationTrend = await fetchRegistrationTrend(
+    apiKey,
+    dateRange.start,
+    dateRange.end,
+    range,
+    rangeResult.hits
+  )
+  const companiesForTable = rangeResult.companies.slice(0, 1000)
 
   return {
     companies: companiesForTable,
-    insights: buildInsights(companiesForInsights, totalCompanies, registrationTrend),
+    insights: buildInsights(rangeResult.companies, rangeResult.hits, registrationTrend),
     source: "api",
     dateRange,
   }
+}
+
+async function fetchRegistrationTrend(
+  apiKey: string,
+  start: string,
+  end: string,
+  range: DateRangeKey,
+  rangeTotal: number
+) {
+  if (range === "today" || range === "yesterday") {
+    return [{ date: end, registrations: rangeTotal }]
+  }
+
+  if (range === "last60") {
+    return fetchCompanyBuckets(apiKey, start, end, 3)
+  }
+
+  const dailyResults = await fetchCompaniesByDay(apiKey, start, end)
+  return dailyResults
+    .map((result) => ({ date: result.date, registrations: result.hits }))
+    .sort((a, b) => a.date.localeCompare(b.date))
 }
 
 async function fetchCompaniesByDay(apiKey: string, start: string, end: string) {
@@ -147,14 +175,82 @@ async function fetchCompaniesByDay(apiKey: string, start: string, end: string) {
   return results
 }
 
+async function fetchCompanyBuckets(
+  apiKey: string,
+  start: string,
+  end: string,
+  bucketDays: number
+) {
+  const buckets: Array<{ start: string; end: string }> = []
+  let cursor = parseISO(start)
+  const endDate = parseISO(end)
+
+  while (cursor <= endDate) {
+    const bucketStart = cursor
+    const bucketEnd = addDays(bucketStart, bucketDays - 1)
+    const cappedEnd = bucketEnd > endDate ? endDate : bucketEnd
+
+    buckets.push({
+      start: format(bucketStart, "yyyy-MM-dd"),
+      end: format(cappedEnd, "yyyy-MM-dd"),
+    })
+
+    cursor = addDays(cappedEnd, 1)
+  }
+
+  const results: TrendPoint[] = []
+  const batchSize = 6
+
+  for (let index = 0; index < buckets.length; index += batchSize) {
+    const batch = buckets.slice(index, index + batchSize)
+    const batchResults = await Promise.all(
+      batch.map(async (bucket) => {
+        const result = await fetchCompaniesForRange(apiKey, bucket.start, bucket.end, 1)
+        const label = bucket.start === bucket.end ? bucket.start : `${bucket.start} to ${bucket.end}`
+        return { date: label, registrations: result.hits }
+      })
+    )
+    results.push(...batchResults)
+  }
+
+  return results
+}
+
+async function fetchCompaniesForRange(
+  apiKey: string,
+  start: string,
+  end: string,
+  size = 5000
+): Promise<CompaniesQueryResult> {
+  const payload = await fetchCompaniesHouse(apiKey, start, end, size)
+  return {
+    companies: (payload.items ?? []).map(normalizeCompany),
+    hits: payload.hits ?? payload.items?.length ?? 0,
+  }
+}
+
 async function fetchCompaniesForDate(
   apiKey: string,
   date: string
 ): Promise<DailyCompaniesResult> {
+  const result = await fetchCompaniesForRange(apiKey, date, date, 1)
+  return {
+    companies: [],
+    date,
+    hits: result.hits,
+  }
+}
+
+async function fetchCompaniesHouse(
+  apiKey: string,
+  start: string,
+  end: string,
+  size: number
+): Promise<CompaniesHouseAdvancedSearchResponse> {
   const params = new URLSearchParams({
-    incorporated_from: date,
-    incorporated_to: date,
-    size: "5000",
+    incorporated_from: start,
+    incorporated_to: end,
+    size: String(size),
   })
 
   const response = await fetch(
@@ -169,7 +265,7 @@ async function fetchCompaniesForDate(
 
   if (!response.ok) {
     if (response.status === 404) {
-      return { companies: [], date, hits: 0 }
+      return { items: [], hits: 0 }
     }
 
     if (response.status === 401) {
@@ -181,12 +277,7 @@ async function fetchCompaniesForDate(
     throw new Error(`Companies House request failed with status ${response.status}`)
   }
 
-  const payload = (await response.json()) as CompaniesHouseAdvancedSearchResponse
-  return {
-    companies: (payload.items ?? []).map(normalizeCompany),
-    date,
-    hits: payload.hits ?? payload.items?.length ?? 0,
-  }
+  return (await response.json()) as CompaniesHouseAdvancedSearchResponse
 }
 
 function normalizeCompany(item: CompaniesHouseItem): CompanyRecord {
