@@ -422,7 +422,7 @@ function InsightChart({
     <Card>
       <CardHeader>
         <CardTitle>{title}</CardTitle>
-        <CardDescription>{description}</CardDescription>
+        <CardDescription className="text-sm leading-5">{description}</CardDescription>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={height}>
@@ -436,12 +436,35 @@ function InsightChart({
               tickFormatter={truncateLabel}
               width={92}
             />
-            <RechartsTooltip formatter={(value) => [value, "companies"]} />
+            <RechartsTooltip content={<ChartTooltip />} />
             <Bar dataKey="value" radius={[0, 4, 4, 0]} fill={color} />
           </BarChart>
         </ResponsiveContainer>
       </CardContent>
     </Card>
+  )
+}
+
+function ChartTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean
+  payload?: Array<{ value?: number | string }>
+  label?: string
+}) {
+  if (!active || !payload?.length) {
+    return null
+  }
+
+  return (
+    <div className="max-w-[240px] rounded-md border-2 bg-background px-3 py-2 text-xs shadow-[3px_3px_0_0_hsl(var(--foreground))]">
+      <p className="line-clamp-2 font-semibold leading-4">{label}</p>
+      <p className="mt-1 text-[11px] font-medium text-muted-foreground">
+        companies: {payload[0]?.value}
+      </p>
+    </div>
   )
 }
 
