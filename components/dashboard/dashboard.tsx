@@ -233,20 +233,20 @@ export function Dashboard() {
               />
               <InsightChart
                 title="Top Cities"
-                description="Most active locations in analyzed filings"
+                description="Exact city counts for the leading locations"
                 data={insights.topCities.slice(0, 5)}
                 color="hsl(var(--chart-2))"
               />
               <GrowthTrendCard data={insights.registrationTrend} />
               <InsightChart
                 title="Company Types"
-                description="Legal structures in analyzed filings"
+                description="Legal structures from analyzed filings"
                 data={insights.companyTypeDistribution}
                 color="hsl(var(--chart-4))"
               />
               <InsightChart
                 title="Keyword Signals"
-                description="Opportunity keywords in analyzed filings"
+                description="Opportunity keywords from analyzed filings"
                 data={insights.keywordMatches.filter((point) => point.value > 0).slice(0, 5)}
                 color="hsl(var(--chart-5))"
               />
@@ -270,15 +270,28 @@ export function Dashboard() {
         )}
 
         <footer className="border-t py-6 text-center text-sm text-muted-foreground">
-          Built by{" "}
-          <a
-            className="font-medium text-foreground underline-offset-4 hover:underline"
-            href="https://twitter.com/msefaoruc"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Sefa Oruc
-          </a>
+          <div className="flex flex-col items-center gap-1">
+            <p>
+              Built by{" "}
+              <a
+                className="font-medium text-foreground underline-offset-4 hover:underline"
+                href="https://twitter.com/msefaoruc"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Sefa Oruc
+              </a>
+            </p>
+            <p className="text-xs">marketing engineer & indie app builder</p>
+            <a
+              className="text-xs font-medium text-foreground underline-offset-4 hover:underline"
+              href="https://sefaoruc.com/"
+              target="_blank"
+              rel="noreferrer"
+            >
+              sefaoruc.com
+            </a>
+          </div>
         </footer>
       </div>
     </main>
@@ -351,9 +364,9 @@ function StatsRow({ insights }: { insights: CompaniesResponse["insights"] }) {
       icon: Building2,
     },
     {
-      label: "London Count",
-      value: londonCount.toLocaleString(),
-      detail: `${formatCompanyCount(londonCount)}`,
+      label: "Top City",
+      value: "London",
+      detail: `Number: ${londonCount.toLocaleString()}`,
       icon: MapPin,
     },
     {
