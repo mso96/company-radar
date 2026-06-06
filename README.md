@@ -11,7 +11,7 @@ UK Company Radar is a modern business intelligence dashboard for analyzing newly
 - MVP insight cards for top industries, top regions, top cities, growth trends, company types, and keyword signals
 - Paid SIC alert signup flow with Stripe Checkout
 - Stripe webhook handling for paid subscriptions
-- Daily email digest alert delivery through Resend
+- Weekly email digest alert delivery through Resend
 - Cloudflare D1 schema for alert subscriptions and tracked SIC codes
 - Clean white MVP interface
 - Loading skeletons, error handling, empty states, and no-results states
@@ -78,7 +78,7 @@ The paid alert flow is intentionally no-login for v1:
 2. User selects up to 3 SIC codes
 3. User pays through Stripe Checkout
 4. Stripe webhook stores the active subscription in D1
-5. A daily Cloudflare cron job sends matching company digests by email
+5. A weekly Cloudflare cron job sends matching company digests by email
 
 Stripe checkout is implemented with the managed payments preview flow. If `STRIPE_PRICE_ID` is not set, the app will create a managed monthly product and default price in Stripe the first time checkout runs, then persist those ids in D1.
 

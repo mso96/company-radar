@@ -2,6 +2,7 @@ import Stripe from "stripe"
 import { NextResponse } from "next/server"
 import { getStripe } from "@/lib/stripe"
 import { upsertAlertSubscription, updateAlertSubscriptionStatus } from "@/lib/alerts/db"
+import { sendWelcomeAlertEmail } from "@/lib/alerts/email"
 import {
   getAlertsRuntimeEnv,
   requireAlertsDatabase,
@@ -19,6 +20,8 @@ export async function POST(request: Request) {
       "STRIPE_WEBHOOK_SECRET"
     )
     const db = requireAlertsDatabase(env)
+    const resendApiKey = requireEnvValue(env.RESEND_API_KEY, "RESEND_API_KEY")
+    const from = requireEnvValue(env.ALERT_FROM_EMAIL, "ALERT_FROM_EMAIL")
     const stripe = getStripe(stripeSecretKey)
     const signature = request.headers.get("stripe-signature")
 
@@ -64,6 +67,14 @@ export async function POST(request: Request) {
           stripeSubscriptionId,
           status: "active",
           sicCodes,
+        })
+
+        await sendWelcomeAlertEmail({
+          resendApiKey,
+          from,
+          to: email,
+          trackedSicCodes: sicCodes,
+          idempotencyKey: `welcome:${stripeSubscriptionId}`,
         })
 
         break

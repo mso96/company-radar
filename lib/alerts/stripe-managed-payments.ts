@@ -36,7 +36,7 @@ export async function ensureManagedSubscriptionPrice(
       ["name", "UK Company Radar SIC Alerts"],
       [
         "description",
-        `Daily ${ALERT_PLAN_PRICE_GBP}/${ALERT_PLAN_INTERVAL} SIC-based UK company alerts`,
+        `Weekly ${ALERT_PLAN_PRICE_GBP}/${ALERT_PLAN_INTERVAL} SIC-based UK company alerts`,
       ],
       ["tax_code", STRIPE_TAX_CODE],
       ["metadata[product_key]", "uk_company_radar_paid_sic_alerts"],

@@ -1,14 +1,15 @@
 import { format, subDays } from "date-fns"
 import { fetchCompaniesForSicAlerts } from "@/lib/companies-house"
 import { markAlertDigestSent, listActiveAlertSubscriptions } from "@/lib/alerts/db"
-import { sendDailyAlertEmail } from "@/lib/alerts/email"
+import { sendWeeklyAlertEmail } from "@/lib/alerts/email"
 import type { AlertsRuntimeEnv } from "@/lib/alerts/runtime"
 import { requireAlertsDatabase, requireEnvValue } from "@/lib/alerts/runtime"
 import type { CompanyRecord } from "@/lib/types"
 
-export async function runDailyAlertDigest(
+export async function runWeeklyAlertDigest(
   env: AlertsRuntimeEnv,
-  targetDate = format(subDays(new Date(), 1), "yyyy-MM-dd")
+  targetEndDate = format(subDays(new Date(), 1), "yyyy-MM-dd"),
+  targetStartDate = format(subDays(new Date(targetEndDate), 6), "yyyy-MM-dd")
 ) {
   const db = requireAlertsDatabase(env)
   const resendApiKey = requireEnvValue(env.RESEND_API_KEY, "RESEND_API_KEY")
@@ -20,7 +21,7 @@ export async function runDailyAlertDigest(
 
   const subscriptions = await listActiveAlertSubscriptions(db)
   if (subscriptions.length === 0) {
-    return { processed: 0, sent: 0, targetDate }
+    return { processed: 0, sent: 0, targetStartDate, targetEndDate }
   }
 
   const uniqueSicCodes = Array.from(
@@ -31,7 +32,12 @@ export async function runDailyAlertDigest(
   for (const sicCode of uniqueSicCodes) {
     companiesBySic.set(
       sicCode,
-      await fetchCompaniesForSicAlerts(companiesHouseApiKey, targetDate, sicCode)
+      await fetchCompaniesForSicAlerts(
+        companiesHouseApiKey,
+        targetStartDate,
+        targetEndDate,
+        sicCode
+      )
     )
   }
 
@@ -67,19 +73,20 @@ export async function runDailyAlertDigest(
       continue
     }
 
-    await sendDailyAlertEmail({
+    await sendWeeklyAlertEmail({
       resendApiKey,
       from,
       to: subscription.email,
       trackedSicCodes: subscription.sicCodes,
       companies: matches,
-      date: targetDate,
-      idempotencyKey: `${subscription.id}:${targetDate}`,
+      startDate: targetStartDate,
+      endDate: targetEndDate,
+      idempotencyKey: `${subscription.id}:${targetStartDate}:${targetEndDate}`,
     })
 
     await markAlertDigestSent(db, subscription.id, new Date().toISOString())
     sent += 1
   }
 
-  return { processed: subscriptions.length, sent, targetDate }
+  return { processed: subscriptions.length, sent, targetStartDate, targetEndDate }
 }

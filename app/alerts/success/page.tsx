@@ -29,7 +29,7 @@ export default function AlertSuccessPage() {
             <CardTitle>Payment completed successfully</CardTitle>
             <CardDescription>
               We will start watching your selected SIC codes and send your first digest in the next
-              daily alert run.
+              weekly alert run.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">

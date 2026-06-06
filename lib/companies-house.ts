@@ -326,7 +326,8 @@ async function fetchCompaniesHouse(
 
 export async function fetchCompaniesForSicAlerts(
   apiKey: string,
-  date: string,
+  startDate: string,
+  endDate: string,
   sicCode: string
 ) {
   const pageSize = 5000
@@ -336,8 +337,8 @@ export async function fetchCompaniesForSicAlerts(
 
   do {
     const payload = await fetchCompaniesHouse(apiKey, {
-      start: date,
-      end: date,
+      start: startDate,
+      end: endDate,
       size: pageSize,
       startIndex,
       sicCodes: [sicCode],

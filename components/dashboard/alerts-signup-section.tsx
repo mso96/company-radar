@@ -106,8 +106,8 @@ export function AlertsSignupSection() {
             <div>
               <CardTitle>Need alerts for specific SIC codes?</CardTitle>
               <CardDescription className="mt-1">
-                Track up to {ALERT_MAX_SIC_CODES} SIC codes and get a daily email when new UK
-                companies appear in your categories.
+                Track up to {ALERT_MAX_SIC_CODES} SIC codes and get a weekly email with newly
+                incorporated UK companies in your categories.
               </CardDescription>
             </div>
           </div>
@@ -256,14 +256,14 @@ export function AlertsSignupSection() {
           <CardTitle>What subscribers get</CardTitle>
           <CardDescription>
             A simple paid layer for founders, sales teams, and market researchers who want fresh
-            UK company signals without checking the dashboard every day.
+            UK company signals without checking the dashboard all week.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 text-sm text-muted-foreground">
           <div className="rounded-md border-2 bg-muted/40 p-4">
-            <p className="font-medium text-foreground">Daily email digest</p>
+            <p className="font-medium text-foreground">Weekly email digest</p>
             <p className="mt-1 leading-6">
-              Every day we send newly incorporated companies from the previous day, filtered by
+              Every week we send newly incorporated companies from the last 7 days, filtered by
               the SIC codes your subscriber chose.
             </p>
           </div>
