@@ -46,8 +46,15 @@ const MAX_COMPANIES_HOUSE_RETRIES = 3
 const SAMPLE_SIZES: Record<DateRangeKey, number> = {
   today: 5000,
   yesterday: 5000,
-  last7: 250,
-  last30: 100,
+  last7: 80,
+  last30: 40,
+}
+
+const INSIGHT_DAY_LIMITS: Record<DateRangeKey, number> = {
+  today: 1,
+  yesterday: 1,
+  last7: 7,
+  last30: 6,
 }
 
 interface CompaniesHouseItem {
@@ -135,7 +142,8 @@ export async function fetchCompanies(range: DateRangeKey): Promise<CompaniesResp
     apiKey,
     dateRange.start,
     dateRange.end,
-    SAMPLE_SIZES[range]
+    SAMPLE_SIZES[range],
+    INSIGHT_DAY_LIMITS[range]
   )
   const companiesForInsights = dailyResults.flatMap((result) => result.companies)
   const companiesForTable = companiesForInsights.slice(0, 1000)
@@ -167,7 +175,8 @@ async function fetchCompaniesByDay(
   apiKey: string,
   start: string,
   end: string,
-  sampleSize: number
+  sampleSize: number,
+  insightDayLimit: number
 ) {
   const dates = eachDayOfInterval({ start: parseISO(start), end: parseISO(end) })
     .map((date) => format(date, "yyyy-MM-dd"))
@@ -179,7 +188,13 @@ async function fetchCompaniesByDay(
   for (let index = 0; index < dates.length; index += batchSize) {
     const batch = dates.slice(index, index + batchSize)
     const batchResults = await Promise.all(
-      batch.map((date) => fetchCompaniesForDate(apiKey, date, sampleSize))
+      batch.map((date, batchIndex) =>
+        fetchCompaniesForDate(
+          apiKey,
+          date,
+          index + batchIndex < insightDayLimit ? sampleSize : 1
+        )
+      )
     )
     results.push(...batchResults)
   }
