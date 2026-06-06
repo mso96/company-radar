@@ -5,10 +5,14 @@ UK Company Radar is a modern business intelligence dashboard for analyzing newly
 ## Features
 
 - Server-side Companies House API integration with Basic Authentication
-- Date filters for today, yesterday, last 7 days, last 30 days, and last 60 days
+- Date filters for today, yesterday, last 7 days, and last 30 days
 - Company table with search, sorting, and pagination
-- Simple stats row for total companies, top city, top SIC, and AI companies
-- MVP insight cards for top industries, top regions, top cities, and growth trends
+- Simple stats row for total companies, top city, top SIC, and hot sector
+- MVP insight cards for top industries, top regions, top cities, growth trends, company types, and keyword signals
+- Paid SIC alert signup flow with Stripe Checkout
+- Stripe webhook handling for paid subscriptions
+- Daily email digest alert delivery through Resend
+- Cloudflare D1 schema for alert subscriptions and tracked SIC codes
 - Clean white MVP interface
 - Loading skeletons, error handling, empty states, and no-results states
 
@@ -41,7 +45,18 @@ cp .env.example .env.local
 COMPANIES_HOUSE_API_KEY=your_companies_house_api_key_here
 ```
 
-4. Start the development server:
+4. Add the paid alert environment variables when you are ready to enable subscriptions:
+
+```bash
+STRIPE_SECRET_KEY=sk_live_or_test_here
+STRIPE_PUBLISHABLE_KEY=pk_live_or_test_here
+STRIPE_WEBHOOK_SECRET=whsec_here
+STRIPE_PRICE_ID=price_here
+RESEND_API_KEY=re_here
+ALERT_FROM_EMAIL=alerts@yourdomain.com
+```
+
+5. Start the development server:
 
 ```bash
 npm run dev
@@ -54,6 +69,55 @@ Open [http://localhost:3000](http://localhost:3000).
 All Companies House requests run through `app/api/companies/route.ts`. The API key is read only from `process.env.COMPANIES_HOUSE_API_KEY` and is sent with Basic Authentication where the key is the username and the password is blank.
 
 The browser never receives the API key.
+
+## Paid SIC Alerts
+
+The paid alert flow is intentionally no-login for v1:
+
+1. User enters an email address
+2. User selects up to 3 SIC codes
+3. User pays through Stripe Checkout
+4. Stripe webhook stores the active subscription in D1
+5. A daily Cloudflare cron job sends matching company digests by email
+
+Stripe checkout is implemented with the managed payments preview flow. If `STRIPE_PRICE_ID` is not set, the app will create a managed monthly product and default price in Stripe the first time checkout runs, then persist those ids in D1.
+
+### Routes
+
+- `POST /api/alerts/checkout`
+- `POST /api/stripe/webhook`
+- `GET /alerts/success`
+
+### D1 migration
+
+Create a D1 database, then apply the migration:
+
+```bash
+npx wrangler d1 create company-radar-alerts
+npx wrangler d1 migrations apply company-radar-alerts
+```
+
+Then add the returned D1 binding details into `wrangler.jsonc`.
+
+### Stripe setup
+
+- Create a recurring price in Stripe for `£4.99/month`, or leave `STRIPE_PRICE_ID` empty and let the app create the managed product/price during the first checkout
+- Point your Stripe webhook endpoint to:
+
+```text
+https://your-domain.com/api/stripe/webhook
+```
+
+- Subscribe the endpoint to:
+  - `checkout.session.completed`
+  - `customer.subscription.updated`
+  - `customer.subscription.deleted`
+
+### Resend setup
+
+- Verify a sending domain in Resend
+- Set `ALERT_FROM_EMAIL` to an address on that domain
+- Add `RESEND_API_KEY`
 
 ## Demo Mode
 
@@ -80,7 +144,18 @@ npm run deploy
 
 Add `COMPANIES_HOUSE_API_KEY` in Cloudflare as a secret or environment variable. Do not prefix it with `NEXT_PUBLIC_`.
 
+For paid SIC alerts, also add:
+
+- `STRIPE_SECRET_KEY`
+- `STRIPE_PUBLISHABLE_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+- `STRIPE_PRICE_ID`
+- `RESEND_API_KEY`
+- `ALERT_FROM_EMAIL`
+
 Set it in both Cloudflare places if the dashboard shows both:
 
 - Build variables and secrets
 - Runtime variables and secrets
+
+When you are ready to enable recurring digests, add the D1 binding and cron trigger in `wrangler.jsonc`, then redeploy.

@@ -93,6 +93,8 @@ interface CompaniesRangeParams {
   end: string
   size: number
   location?: string
+  sicCodes?: string[]
+  startIndex?: number
 }
 
 export function getDateRange(range: DateRangeKey) {
@@ -270,8 +272,16 @@ async function fetchCompaniesHouse(
     size: String(paramsInput.size),
   })
 
+  if (typeof paramsInput.startIndex === "number") {
+    params.set("start_index", String(paramsInput.startIndex))
+  }
+
   if (paramsInput.location) {
     params.set("location", paramsInput.location)
+  }
+
+  if (paramsInput.sicCodes?.length) {
+    params.set("sic_codes", paramsInput.sicCodes.join(","))
   }
 
   const url = `https://api.company-information.service.gov.uk/advanced-search/companies?${params.toString()}`
@@ -311,6 +321,40 @@ async function fetchCompaniesHouse(
 
   throw new Error(
     `Companies House request failed with status ${lastStatus} for range ${paramsInput.start} to ${paramsInput.end}.`
+  )
+}
+
+export async function fetchCompaniesForSicAlerts(
+  apiKey: string,
+  date: string,
+  sicCode: string
+) {
+  const pageSize = 5000
+  const companies: CompanyRecord[] = []
+  let startIndex = 0
+  let hits = 0
+
+  do {
+    const payload = await fetchCompaniesHouse(apiKey, {
+      start: date,
+      end: date,
+      size: pageSize,
+      startIndex,
+      sicCodes: [sicCode],
+    })
+
+    const pageCompanies = (payload.items ?? []).map(normalizeCompany)
+    hits = payload.hits ?? pageCompanies.length
+    companies.push(...pageCompanies)
+    startIndex += pageCompanies.length
+
+    if (pageCompanies.length < pageSize) {
+      break
+    }
+  } while (startIndex < hits)
+
+  return Array.from(
+    new Map(companies.map((company) => [company.companyNumber, company])).values()
   )
 }
 

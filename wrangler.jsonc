@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "main": ".open-next/worker.js",
+  "main": "worker.mjs",
   "name": "company-radar",
   "compatibility_date": "2026-06-05",
   "compatibility_flags": [
@@ -18,5 +18,15 @@
       "binding": "WORKER_SELF_REFERENCE",
       "service": "company-radar"
     }
-  ]
+  ],
+  "d1_databases": [
+    {
+      "binding": "ALERTS_DB",
+      "database_name": "company-radar-alerts",
+      "database_id": "48410c5c-1e89-4b77-808d-9f9b06b9a558"
+    }
+  ],
+  "triggers": {
+    "crons": ["0 8 * * *"]
+  }
 }

@@ -62,6 +62,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { AlertsSignupSection } from "@/components/dashboard/alerts-signup-section"
 import { SIC_LABELS } from "@/lib/sic-codes"
 import type { CompaniesResponse, CompanyRecord, DateRangeKey } from "@/lib/types"
 
@@ -266,6 +267,8 @@ export function Dashboard() {
                 updateSort(key, sortKey, sortDirection, setSortKey, setSortDirection)
               }
             />
+
+            <AlertsSignupSection />
           </>
         )}
 

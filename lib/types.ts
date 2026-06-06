@@ -12,6 +12,11 @@ export interface CompanyRecord {
   matchedKeywords: string[]
 }
 
+export interface SicOption {
+  code: string
+  description: string
+}
+
 export interface DistributionPoint {
   name: string
   value: number
@@ -51,4 +56,21 @@ export interface CompaniesResponse {
     start: string
     end: string
   }
+}
+
+export interface AlertCheckoutInput {
+  email: string
+  sicCodes: string[]
+}
+
+export interface AlertSubscriptionRecord {
+  id: string
+  email: string
+  stripeCustomerId: string
+  stripeSubscriptionId: string
+  status: string
+  sicCodes: string[]
+  createdAt: string
+  updatedAt: string
+  lastAlertSentAt: string | null
 }
