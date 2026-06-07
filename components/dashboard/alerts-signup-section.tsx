@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import { Check, Coffee, CreditCard, Mail, Radar, Search, Sparkles, X } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -146,6 +147,18 @@ export function AlertsSignupSection() {
                   <Coffee className="size-3.5" />
                   Only for a Greggs coffee
                 </div>
+                <p className="mt-3 text-xs leading-5 text-muted-foreground">
+                  You can inspect an example weekly results page{" "}
+                  <Link
+                    className="font-medium text-foreground underline underline-offset-4"
+                    href="/alerts/results-preview"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    here
+                  </Link>
+                  .
+                </p>
               </div>
             </div>
 

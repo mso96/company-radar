@@ -1,7 +1,8 @@
 "use client"
 
 import * as React from "react"
-import { Filter, MapPin, Search } from "lucide-react"
+import Link from "next/link"
+import { Filter, MapPin, MessageCircle, Search } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -26,11 +27,16 @@ export function AlertResultsView({ run }: { run: AlertRunRecord }) {
     const normalizedQuery = query.trim().toLowerCase()
 
     return run.companies.filter((company) => {
+      const sicSearchText = company.matchedSicCodes
+        .map((code) => `${code} ${SIC_LABELS[code] ?? ""}`.toLowerCase())
+        .join(" ")
+
       const matchesQuery =
         normalizedQuery.length === 0 ||
         company.companyName.toLowerCase().includes(normalizedQuery) ||
         company.companyNumber.toLowerCase().includes(normalizedQuery) ||
-        company.location.toLowerCase().includes(normalizedQuery)
+        company.location.toLowerCase().includes(normalizedQuery) ||
+        sicSearchText.includes(normalizedQuery)
 
       const matchesSic =
         selectedSicCode === "all" || company.matchedSicCodes.includes(selectedSicCode)
@@ -188,6 +194,31 @@ export function AlertResultsView({ run }: { run: AlertRunRecord }) {
                 onClick={() => setPage(Math.min(pageCount, currentPage + 1))}
               />
             </Pagination>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="flex flex-col gap-3 pt-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-1">
+            <p className="text-sm font-semibold text-foreground">
+              Do you have any suggestions or feedback?
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Please DM me on X at <span className="font-medium text-foreground">@msefaoruc</span>
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge className="px-3 py-1.5" variant="outline">
+              <MessageCircle className="mr-1.5 size-3.5" />
+              @msefaoruc
+            </Badge>
+            <Link href="https://sefaoruc.com" target="_blank" rel="noreferrer">
+              <Badge className="px-3 py-1.5" variant="outline">
+                sefaoruc.com
+              </Badge>
+            </Link>
           </div>
         </CardContent>
       </Card>
