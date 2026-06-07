@@ -3,6 +3,7 @@ import { NextResponse } from "next/server"
 import { getStripe } from "@/lib/stripe"
 import { upsertAlertSubscription, updateAlertSubscriptionStatus } from "@/lib/alerts/db"
 import { sendWelcomeAlertEmail } from "@/lib/alerts/email"
+import { sendTelegramSubscriberNotification } from "@/lib/alerts/telegram"
 import {
   getAlertsRuntimeEnv,
   requireAlertsDatabase,
@@ -75,6 +76,14 @@ export async function POST(request: Request) {
           to: email,
           trackedSicCodes: sicCodes,
           idempotencyKey: `welcome:${stripeSubscriptionId}`,
+        })
+
+        await sendTelegramSubscriberNotification({
+          botToken: env.TELEGRAM_BOT_TOKEN,
+          chatId: env.TELEGRAM_CHAT_ID,
+          email,
+          sicCodes,
+          stripeSubscriptionId,
         })
 
         break

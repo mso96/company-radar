@@ -14,11 +14,14 @@ declare global {
   interface CloudflareEnv {
     ALERTS_DB?: D1Database
     COMPANIES_HOUSE_API_KEY?: string
+    SITE_URL?: string
     STRIPE_SECRET_KEY?: string
     STRIPE_WEBHOOK_SECRET?: string
     STRIPE_PRICE_ID?: string
     RESEND_API_KEY?: string
     ALERT_FROM_EMAIL?: string
+    TELEGRAM_BOT_TOKEN?: string
+    TELEGRAM_CHAT_ID?: string
   }
 }
 

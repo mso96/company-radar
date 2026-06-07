@@ -11,6 +11,7 @@ interface SendDailyAlertEmailInput {
   companies: Array<CompanyRecord & { matchedAlertCodes: string[] }>
   startDate: string
   endDate: string
+  resultsUrl: string
   idempotencyKey: string
 }
 
@@ -206,6 +207,14 @@ function buildAlertHtml(input: SendDailyAlertEmailInput) {
           ? `<p style="margin: 12px 0 0; color: #6b7280; font-size: 14px;">${remainingCount} more matching companies were not included in this email preview.</p>`
           : ""
       }
+      <div style="margin: 20px 0 0;">
+        <a
+          href="${escapeHtml(input.resultsUrl)}"
+          style="display: inline-block; padding: 12px 18px; background: #d7ff2f; border: 2px solid #111827; color: #111827; text-decoration: none; font-weight: 700;"
+        >
+          View all matches
+        </a>
+      </div>
     </div>
   `
 }
@@ -229,6 +238,7 @@ function buildAlertText(input: SendDailyAlertEmailInput) {
     `Tracked SIC codes: ${input.trackedSicCodes.join(", ")}`,
     `Top cities: ${summarizeTopCities(input.companies)}`,
     `Showing first ${previewCompanies.length} matches below`,
+    `View all matches: ${input.resultsUrl}`,
     "",
     companyLines,
     ...(remainingCount ? ["", `${remainingCount} more matching companies were not included in this email preview.`] : []),

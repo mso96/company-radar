@@ -74,3 +74,24 @@ export interface AlertSubscriptionRecord {
   updatedAt: string
   lastAlertSentAt: string | null
 }
+
+export interface AlertRunCompanyRecord {
+  companyNumber: string
+  companyName: string
+  incorporationDate: string
+  location: string
+  matchedSicCodes: string[]
+}
+
+export interface AlertRunRecord {
+  id: string
+  subscriptionId: string
+  periodStart: string
+  periodEnd: string
+  matchCount: number
+  trackedSicCodes: string[]
+  topCities: DistributionPoint[]
+  accessToken: string
+  createdAt: string
+  companies: AlertRunCompanyRecord[]
+}

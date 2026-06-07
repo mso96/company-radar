@@ -43,6 +43,7 @@ cp .env.example .env.local
 
 ```bash
 COMPANIES_HOUSE_API_KEY=your_companies_house_api_key_here
+SITE_URL=https://companyradar.uk
 ```
 
 4. Add the paid alert environment variables when you are ready to enable subscriptions:
@@ -54,6 +55,8 @@ STRIPE_WEBHOOK_SECRET=whsec_here
 STRIPE_PRICE_ID=price_here
 RESEND_API_KEY=re_here
 ALERT_FROM_EMAIL=alerts@yourdomain.com
+TELEGRAM_BOT_TOKEN=bot_token_here
+TELEGRAM_CHAT_ID=chat_id_here
 ```
 
 5. Start the development server:
@@ -78,7 +81,8 @@ The paid alert flow is intentionally no-login for v1:
 2. User selects up to 3 SIC codes
 3. User pays through Stripe Checkout
 4. Stripe webhook stores the active subscription in D1
-5. A weekly Cloudflare cron job sends matching company digests by email
+5. A weekly Cloudflare cron job stores a private alert run snapshot and sends the digest email
+6. The email links to a private results page for that week
 
 Stripe checkout is implemented with the managed payments preview flow. If `STRIPE_PRICE_ID` is not set, the app will create a managed monthly product and default price in Stripe the first time checkout runs, then persist those ids in D1.
 
@@ -87,6 +91,7 @@ Stripe checkout is implemented with the managed payments preview flow. If `STRIP
 - `POST /api/alerts/checkout`
 - `POST /api/stripe/webhook`
 - `GET /alerts/success`
+- `GET /alerts/results/[token]`
 
 ### D1 migration
 
@@ -98,6 +103,7 @@ npx wrangler d1 migrations apply company-radar-alerts
 ```
 
 Then add the returned D1 binding details into `wrangler.jsonc`.
+Also apply new migrations when alert run storage changes are added.
 
 ### Stripe setup
 
@@ -118,6 +124,13 @@ https://your-domain.com/api/stripe/webhook
 - Verify a sending domain in Resend
 - Set `ALERT_FROM_EMAIL` to an address on that domain
 - Add `RESEND_API_KEY`
+
+### Telegram notifications
+
+- Create a Telegram bot with BotFather
+- Add your bot token as `TELEGRAM_BOT_TOKEN`
+- Add your personal or group chat id as `TELEGRAM_CHAT_ID`
+- When a paid subscription completes, the Stripe webhook will send you a Telegram notification
 
 ## Demo Mode
 
@@ -146,6 +159,7 @@ Add `COMPANIES_HOUSE_API_KEY` in Cloudflare as a secret or environment variable.
 
 For paid SIC alerts, also add:
 
+- `SITE_URL`
 - `STRIPE_SECRET_KEY`
 - `STRIPE_PUBLISHABLE_KEY`
 - `STRIPE_WEBHOOK_SECRET`

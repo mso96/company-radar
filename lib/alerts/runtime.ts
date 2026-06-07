@@ -3,11 +3,14 @@ import { getCloudflareContext } from "@opennextjs/cloudflare"
 export interface AlertsRuntimeEnv {
   ALERTS_DB?: D1Database
   COMPANIES_HOUSE_API_KEY?: string
+  SITE_URL?: string
   STRIPE_SECRET_KEY?: string
   STRIPE_WEBHOOK_SECRET?: string
   STRIPE_PRICE_ID?: string
   RESEND_API_KEY?: string
   ALERT_FROM_EMAIL?: string
+  TELEGRAM_BOT_TOKEN?: string
+  TELEGRAM_CHAT_ID?: string
 }
 
 export async function getAlertsRuntimeEnv() {
@@ -16,12 +19,16 @@ export async function getAlertsRuntimeEnv() {
     ...context.env,
     COMPANIES_HOUSE_API_KEY:
       context.env.COMPANIES_HOUSE_API_KEY ?? process.env.COMPANIES_HOUSE_API_KEY,
+    SITE_URL: context.env.SITE_URL ?? process.env.SITE_URL,
     STRIPE_SECRET_KEY: context.env.STRIPE_SECRET_KEY ?? process.env.STRIPE_SECRET_KEY,
     STRIPE_WEBHOOK_SECRET:
       context.env.STRIPE_WEBHOOK_SECRET ?? process.env.STRIPE_WEBHOOK_SECRET,
     STRIPE_PRICE_ID: context.env.STRIPE_PRICE_ID ?? process.env.STRIPE_PRICE_ID,
     RESEND_API_KEY: context.env.RESEND_API_KEY ?? process.env.RESEND_API_KEY,
     ALERT_FROM_EMAIL: context.env.ALERT_FROM_EMAIL ?? process.env.ALERT_FROM_EMAIL,
+    TELEGRAM_BOT_TOKEN:
+      context.env.TELEGRAM_BOT_TOKEN ?? process.env.TELEGRAM_BOT_TOKEN,
+    TELEGRAM_CHAT_ID: context.env.TELEGRAM_CHAT_ID ?? process.env.TELEGRAM_CHAT_ID,
   } as AlertsRuntimeEnv
 }
 

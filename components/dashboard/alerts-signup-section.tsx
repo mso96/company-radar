@@ -144,7 +144,7 @@ export function AlertsSignupSection() {
                 </p>
                 <div className="mt-2 inline-flex items-center gap-2 rounded-md border-2 bg-background px-2.5 py-1 text-xs font-medium text-foreground">
                   <Coffee className="size-3.5" />
-                  Only for a Costco coffee
+                  Only for a Greggs coffee
                 </div>
               </div>
             </div>

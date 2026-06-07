@@ -1,6 +1,10 @@
 import { format, subDays } from "date-fns"
 import { fetchCompaniesForSicAlerts } from "@/lib/companies-house"
-import { markAlertDigestSent, listActiveAlertSubscriptions } from "@/lib/alerts/db"
+import {
+  createOrReplaceAlertRun,
+  listActiveAlertSubscriptions,
+  markAlertDigestSent,
+} from "@/lib/alerts/db"
 import { sendWeeklyAlertEmail } from "@/lib/alerts/email"
 import type { AlertsRuntimeEnv } from "@/lib/alerts/runtime"
 import { requireAlertsDatabase, requireEnvValue } from "@/lib/alerts/runtime"
@@ -14,6 +18,7 @@ export async function runWeeklyAlertDigest(
   const db = requireAlertsDatabase(env)
   const resendApiKey = requireEnvValue(env.RESEND_API_KEY, "RESEND_API_KEY")
   const from = requireEnvValue(env.ALERT_FROM_EMAIL, "ALERT_FROM_EMAIL")
+  const siteUrl = (env.SITE_URL ?? "https://companyradar.uk").replace(/\/$/, "")
   const companiesHouseApiKey = requireEnvValue(
     env.COMPANIES_HOUSE_API_KEY,
     "COMPANIES_HOUSE_API_KEY"
@@ -73,6 +78,14 @@ export async function runWeeklyAlertDigest(
       continue
     }
 
+    const alertRun = await createOrReplaceAlertRun(db, {
+      subscriptionId: subscription.id,
+      periodStart: targetStartDate,
+      periodEnd: targetEndDate,
+      trackedSicCodes: subscription.sicCodes,
+      companies: matches,
+    })
+
     await sendWeeklyAlertEmail({
       resendApiKey,
       from,
@@ -81,6 +94,7 @@ export async function runWeeklyAlertDigest(
       companies: matches,
       startDate: targetStartDate,
       endDate: targetEndDate,
+      resultsUrl: `${siteUrl}/alerts/results/${alertRun.accessToken}`,
       idempotencyKey: `${subscription.id}:${targetStartDate}:${targetEndDate}`,
     })
 
