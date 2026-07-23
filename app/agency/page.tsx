@@ -1,11 +1,10 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { ArrowRight, Building2, Calculator, Check, Mail, Search, ShoppingBag, Sparkles } from "lucide-react"
+import { ArrowRight, Building2, Check, Dumbbell, Mail, Search, ShoppingBag, Utensils } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { MarketingHeader } from "@/components/marketing/marketing-header"
-import { SECTOR_LANDING_PAGES } from "@/lib/sector-landing-pages"
 
 export const metadata: Metadata = {
   title: "Agency Intelligence | UK Company Radar",
@@ -14,10 +13,17 @@ export const metadata: Metadata = {
 }
 
 const audiences = [
-  { name: "Digital agencies", description: "Find new businesses before their first website, rebrand or growth brief.", href: "/new-ai-companies", action: "Explore AI & software radar", icon: Sparkles },
-  { name: "Property services", description: "Follow fresh property businesses for finance, insurance and service opportunities.", href: "/new-property-companies", action: "Explore property radar", icon: Building2 },
-  { name: "Ecommerce services", description: "Spot new merchants early for store builds, fulfilment and paid media support.", href: "/new-ecommerce-companies", action: "Explore ecommerce radar", icon: ShoppingBag },
-  { name: "Accounting firms", description: "Reach newly formed companies before their first filing and advisory decisions.", href: "/contact", action: "Talk about accounting leads", icon: Calculator },
+  { name: "Ecommerce businesses", description: "Reach new online retailers before their first store, campaign or fulfilment decision.", href: "/new-ecommerce-companies", action: "Find ecommerce companies", icon: ShoppingBag },
+  { name: "Gyms & fitness studios", description: "Meet new gyms early with offers for memberships, local growth and launch marketing.", href: "/agency-login", action: "Build a fitness campaign", icon: Dumbbell },
+  { name: "Restaurants & hospitality", description: "Find new venues before opening night with a focused local outreach campaign.", href: "/agency-login", action: "Build a hospitality campaign", icon: Utensils },
+  { name: "Property businesses", description: "Reach new property, estate and development companies while plans are still taking shape.", href: "/new-property-companies", action: "Find property companies", icon: Building2 },
+]
+
+const targetProfiles = [
+  { title: "New ecommerce businesses", description: "Online retailers and new merchants preparing their first store and growth plan.", href: "/new-ecommerce-companies" },
+  { title: "New gyms & fitness studios", description: "Fitness businesses looking for memberships, local visibility and a strong launch.", href: "/agency-login" },
+  { title: "New restaurants & hospitality", description: "New venues and hospitality teams building awareness before their opening day.", href: "/agency-login" },
+  { title: "New property businesses", description: "Property, estate and development companies making their first commercial moves.", href: "/new-property-companies" },
 ]
 
 export default function AgencyMarketingPage() {
@@ -26,7 +32,7 @@ export default function AgencyMarketingPage() {
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-7 sm:px-6 lg:px-8">
         <MarketingHeader />
 
-        <section className="overflow-hidden border-2 bg-card shadow-[6px_6px_0_0_hsl(var(--foreground))]">
+        <section className="order-1 overflow-hidden border-2 bg-card shadow-[6px_6px_0_0_hsl(var(--foreground))]">
           <div className="grid gap-8 px-5 py-8 sm:px-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:px-10 lg:py-12">
             <div>
               <Badge className="border-2" variant="outline">Agency Mode · free workspace</Badge>
@@ -51,30 +57,129 @@ export default function AgencyMarketingPage() {
           <div className="grid grid-cols-4 border-t-2"><div className="h-3 bg-[hsl(var(--chart-1))]" /><div className="h-3 bg-[hsl(var(--chart-2))]" /><div className="h-3 bg-[hsl(var(--chart-3))]" /><div className="h-3 bg-[hsl(var(--chart-4))]" /></div>
         </section>
 
-        <section id="for-who" className="scroll-mt-6">
+        <section id="for-who" className="order-3 scroll-mt-6">
           <div className="mb-4"><p className="text-sm font-bold uppercase tracking-wide text-muted-foreground">For who</p><h2 className="mt-1 text-3xl font-black">Built for teams selling into new businesses.</h2><p className="mt-2 max-w-2xl text-muted-foreground">Start with the audience closest to your offer. You can change the filters and letter before activating a radar.</p></div>
           <div className="grid gap-4 md:grid-cols-2">
             {audiences.map(({ name, description, href, action, icon: Icon }) => <Card key={name}><CardHeader><div className="mb-2 flex size-10 items-center justify-center border-2 bg-[hsl(var(--chart-3))]"><Icon className="size-5" /></div><CardTitle>{name}</CardTitle><CardDescription>{description}</CardDescription></CardHeader><CardContent><Button asChild variant="outline"><Link href={href}>{action} <ArrowRight className="size-4" /></Link></Button></CardContent></Card>)}
           </div>
         </section>
 
-        <section id="how-it-works" className="scroll-mt-6">
-          <div className="mb-4"><p className="text-sm font-bold uppercase tracking-wide text-muted-foreground">How it works</p><h2 className="mt-1 text-3xl font-black">From company signal to approved letter.</h2></div>
+        <section className="order-2 scroll-mt-6" aria-labelledby="example-letter-heading">
+          <div className="mb-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-sm font-bold uppercase tracking-wide text-muted-foreground">Physical letter preview</p>
+              <Badge className="border-2 bg-[hsl(var(--chart-2))]" variant="outline">Printed &amp; posted</Badge>
+            </div>
+            <h2 id="example-letter-heading" className="mt-1 text-3xl font-black">A letter your new-company campaign can send.</h2>
+            <p className="mt-2 max-w-2xl text-muted-foreground">
+              Start with a ready-made message, then make it yours with your services, branding and call to action before you approve a batch.
+            </p>
+          </div>
+          <Card className="overflow-hidden">
+            <CardContent className="flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
+              <div className="order-last flex w-full justify-center border-t-2 pt-6">
+                <Button asChild className="w-full bg-[hsl(var(--chart-5))] text-white hover:bg-[hsl(var(--chart-5))]/90 sm:w-auto" size="lg">
+                  <Link href="/agency-login">Reach new companies the day after incorporation <ArrowRight className="size-4" /></Link>
+                </Button>
+              </div>
+              <article className="order-first mx-auto aspect-[210/297] w-full max-w-[820px] overflow-hidden border-2 bg-white text-black shadow-[5px_5px_0_0_hsl(var(--foreground))]" aria-label="Example A4 direct mail letter">
+                <div className="bg-black px-5 py-2 text-center text-[10px] font-black uppercase tracking-[0.18em] text-white sm:px-8">New company? Let&apos;s make your next step easier.</div>
+                <div className="p-5 sm:p-8">
+                  <div className="flex items-start justify-between gap-4 border-b-4 border-[hsl(var(--chart-2))] pb-5">
+                    <div className="flex items-center gap-3">
+                      <div className="relative flex size-12 items-center justify-center border-2 bg-[hsl(var(--chart-2))] shadow-[3px_3px_0_0_black]" aria-label="Northstar Digital logo">
+                        <svg className="size-9" viewBox="0 0 48 48" role="img" aria-hidden="true">
+                          <circle cx="24" cy="24" r="18" fill="none" stroke="currentColor" strokeWidth="2.5" />
+                          <path d="M24 5 28 20 43 24 28 28 24 43 20 28 5 24 20 20Z" fill="currentColor" />
+                          <path d="m24 10 2.2 11.8L38 24l-11.8 2.2L24 38l-2.2-11.8L10 24l11.8-2.2Z" fill="hsl(var(--chart-2))" />
+                          <circle cx="24" cy="24" r="3" fill="currentColor" />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-lg font-black uppercase tracking-tight">Northstar Digital</p>
+                        <p className="mt-1 text-xs font-semibold text-black/60">Make your next move matter.</p>
+                      </div>
+                    </div>
+                    <span className="border-2 border-black px-2 py-1 text-[10px] font-black uppercase tracking-wide">A warm hello</span>
+                  </div>
+                  <div className="mt-7 space-y-4 text-sm leading-6 sm:text-base">
+                    <p>Hello <strong>Harbour Business Support Ltd</strong>,</p>
+                    <p>First of all, a huge congratulations on starting your new company. It&apos;s an exciting step, and we know there is a lot to get moving at once.</p>
+                    <p>We help new businesses get a confident first impression and a practical plan for finding customers:</p>
+                    <ul className="list-disc space-y-1 pl-5 font-semibold">
+                      <li>Website launch and conversion-ready pages</li>
+                      <li>Branding that feels like you</li>
+                      <li>SEO to help the right people find you</li>
+                      <li>Paid media when you are ready to grow</li>
+                    </ul>
+                    <p>If it would be useful, we&apos;d love to have a friendly 15-minute chat and share a few ideas for Harbour Business Support Ltd. No hard sell, just useful next steps.</p>
+                  </div>
+                  <div className="mt-6 grid gap-4 border-2 border-black bg-[hsl(var(--chart-2))] p-4 sm:grid-cols-[1fr_auto] sm:items-center">
+                    <div>
+                      <p className="text-sm font-black">Book a friendly 15-minute chat</p>
+                      <p className="mt-1 text-xs font-semibold">Scan to choose a time: northstardigital.co.uk/start</p>
+                    </div>
+                    <img className="size-24 border-2 border-black bg-white p-1" src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&margin=8&data=https%3A%2F%2Fnorthstardigital.co.uk%2Fstart" alt="QR code for the Northstar Digital booking page" loading="lazy" />
+                  </div>
+                  <div className="mt-4 grid gap-3 border-2 border-black bg-black p-4 text-white sm:grid-cols-[1fr_auto] sm:items-center">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[hsl(var(--chart-2))]">New company launch offer</p>
+                      <p className="mt-1 text-lg font-black">50% off your first project</p>
+                    </div>
+                    <span className="border-2 border-[hsl(var(--chart-2))] px-3 py-2 text-center text-xs font-black text-[hsl(var(--chart-2))]">Mention this letter</span>
+                  </div>
+                  <div className="mt-7 border-t-2 pt-5">
+                    <p className="font-black">All the best,</p>
+                    <p className="mt-1 font-semibold">Alex Morgan · Northstar Digital</p>
+                    <p className="mt-4 text-xs leading-5 text-black/70">northstardigital.co.uk · hello@northstardigital.co.uk · 020 7946 0958</p>
+                    <p className="mt-2 text-[10px] leading-4 text-black/50">To opt out of future post, use reference NS-EXAMPLE-2048.</p>
+                  </div>
+                  <div className="mt-7 border-t-2 pt-5">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                      <div>
+                        <p className="text-xs font-black uppercase tracking-[0.14em]">Meet your launch team</p>
+                        <p className="mt-1 text-xs leading-5 text-black/70">Small team, practical advice, no hard sell.</p>
+                      </div>
+                      <span className="text-[10px] font-black uppercase tracking-wide text-black/50">Northstar Digital</span>
+                    </div>
+                    <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                      <div className="flex items-center gap-2 border-2 border-black p-2">
+                        <span className="flex size-9 shrink-0 items-center justify-center rounded-full border-2 border-black bg-[hsl(var(--chart-2))] text-[10px] font-black">AM</span>
+                        <span><strong className="block text-xs">Alex Morgan</strong><small className="text-[10px] text-black/60">Strategy</small></span>
+                      </div>
+                      <div className="flex items-center gap-2 border-2 border-black p-2">
+                        <span className="flex size-9 shrink-0 items-center justify-center rounded-full border-2 border-black bg-[hsl(var(--chart-5))] text-[10px] font-black text-white">MP</span>
+                        <span><strong className="block text-xs">Maya Patel</strong><small className="text-[10px] text-black/60">Brand &amp; web</small></span>
+                      </div>
+                      <div className="flex items-center gap-2 border-2 border-black p-2">
+                        <span className="flex size-9 shrink-0 items-center justify-center rounded-full border-2 border-black bg-[hsl(var(--chart-3))] text-[10px] font-black">SR</span>
+                        <span><strong className="block text-xs">Sam Reed</strong><small className="text-[10px] text-black/60">Growth</small></span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            </CardContent>
+          </Card>
+        </section>
+
+        <section id="how-it-works" className="order-4 scroll-mt-6">
+          <div className="mb-4"><p className="text-sm font-bold uppercase tracking-wide text-muted-foreground">How it works</p><h2 className="mt-1 text-3xl font-black">From signal to letter.</h2></div>
           <div className="grid gap-4 md:grid-cols-3">
-            <ProcessCard number="01" title="Filter the right companies" text="Set SIC codes, city or region, postcode prefixes and company age. Your radar only watches the audience you can serve." />
-            <ProcessCard number="02" title="Personalise the message" text="Use a segment template, insert company merge fields, add your CTA and apply your agency branding." />
-            <ProcessCard number="03" title="Approve the batch" text="Review new leads, preview the PDF and approve the exact batch before it is submitted to the mail provider." />
+            <ProcessCard number="01" title="Choose your audience" text="SIC codes, city and company age." />
+            <ProcessCard number="02" title="Customise your letter" text="Services, branding and CTA." />
+            <ProcessCard number="03" title="Approve and send" text="Preview, approve and post." />
           </div>
         </section>
 
-        <section id="sector-radars" className="scroll-mt-6">
-          <div className="mb-4"><p className="text-sm font-bold uppercase tracking-wide text-muted-foreground">Sector radars</p><h2 className="mt-1 text-3xl font-black">See the signal before you build a campaign.</h2><p className="mt-2 max-w-2xl text-muted-foreground">These public previews show the kind of newly incorporated companies each audience contains. Open Agency Mode to customise the filters and letter.</p></div>
+        <section id="sector-radars" className="order-5 scroll-mt-6">
+          <div className="mb-4"><p className="text-sm font-bold uppercase tracking-wide text-muted-foreground">Target company profiles</p><h2 className="mt-1 text-3xl font-black">Choose the companies you want to reach.</h2><p className="mt-2 max-w-2xl text-muted-foreground">Start with a profile of newly incorporated companies, then customise the audience and letter in Agency Mode.</p></div>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {SECTOR_LANDING_PAGES.map((sector) => <Card key={sector.slug} className="flex flex-col"><CardHeader><CardTitle className="text-xl">{sector.sector}</CardTitle><CardDescription>{sector.description}</CardDescription></CardHeader><CardContent className="mt-auto"><div className="mb-4 flex flex-wrap gap-1">{sector.sicCodes.map((code) => <Badge key={code} variant="outline">{code}</Badge>)}</div><Button asChild className="w-full" variant="secondary"><Link href={`/${sector.slug}`}>Open radar <ArrowRight className="size-4" /></Link></Button></CardContent></Card>)}
+            {targetProfiles.map((profile) => <Card key={profile.title} className="flex flex-col"><CardHeader className="p-4"><CardTitle className="text-lg">{profile.title}</CardTitle><CardDescription className="text-sm leading-5">{profile.description}</CardDescription></CardHeader><CardContent className="mt-auto p-4 pt-0"><Link className="inline-flex items-center gap-2 text-sm font-black underline-offset-4 hover:underline" href={profile.href}>Reach this profile <ArrowRight className="size-4" /></Link></CardContent></Card>)}
           </div>
         </section>
 
-        <section className="border-2 bg-foreground p-6 text-background shadow-[6px_6px_0_0_hsl(var(--chart-2))] sm:p-8"><div className="flex flex-col items-start justify-between gap-5 sm:flex-row sm:items-center"><div><p className="text-xs font-black uppercase tracking-wide opacity-70">Ready to test your market?</p><h2 className="mt-1 text-3xl font-black">Build your first radar in minutes.</h2><p className="mt-2 max-w-xl text-sm opacity-80">The workspace is free. Physical letters stay in review until you approve the send.</p></div><Button asChild size="lg" variant="secondary"><Link href="/agency-login">Open Agency Mode <ArrowRight className="size-4" /></Link></Button></div></section>
+        <section className="order-6 border-2 bg-foreground p-6 text-background shadow-[6px_6px_0_0_hsl(var(--chart-2))] sm:p-8"><div className="flex flex-col items-start justify-between gap-5 sm:flex-row sm:items-center"><div><p className="text-xs font-black uppercase tracking-wide opacity-70">Ready to test your market?</p><h2 className="mt-1 text-3xl font-black">Build your first radar in minutes.</h2><p className="mt-2 max-w-xl text-sm opacity-80">The workspace is free. Physical letters stay in review until you approve the send.</p></div><Button asChild size="lg" variant="secondary"><Link href="/agency-login">Open Agency Mode <ArrowRight className="size-4" /></Link></Button></div></section>
       </div>
     </main>
   )
@@ -85,5 +190,5 @@ function HeroStep({ number, title, text, icon: Icon }: { number: string; title: 
 }
 
 function ProcessCard({ number, title, text }: { number: string; title: string; text: string }) {
-  return <Card><CardHeader><Badge className="w-fit border-2" variant="outline">{number}</Badge><CardTitle className="text-xl">{title}</CardTitle><CardDescription>{text}</CardDescription></CardHeader></Card>
+  return <Card><CardHeader className="gap-2 p-4"><Badge className="w-fit border-2 px-2 py-0.5 text-xs" variant="outline">{number}</Badge><CardTitle className="text-lg">{title}</CardTitle><CardDescription className="text-sm leading-5">{text}</CardDescription></CardHeader></Card>
 }

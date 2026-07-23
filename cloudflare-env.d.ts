@@ -22,6 +22,8 @@ declare global {
     ALERT_FROM_EMAIL?: string
     TELEGRAM_BOT_TOKEN?: string
     TELEGRAM_CHAT_ID?: string
+    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?: string
+    CLERK_SECRET_KEY?: string
   }
 }
 

@@ -72,7 +72,11 @@ The browser never receives the API key.
 
 ## Agency Mode and direct mail
 
-Agency Mode is available at `/agency-login`. The local demo gives access to a sample workspace without any external credentials. Real workspaces require the D1 binding, Resend magic-link settings and a Companies House API key. Physical mail is always held in an owner approval queue and requires prepaid credits.
+Agency Mode is available at `/agency-login`. The local demo gives access to a sample workspace without any external credentials. Production workspaces use Clerk for Google/email authentication and D1 for workspace data; the legacy Resend magic-link flow remains available during migration. Physical mail is always held in an owner approval queue and requires prepaid credits.
+
+### Clerk setup
+
+Add `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` as Cloudflare runtime secrets. Enable Google and email sign-in in Clerk, then configure the production Google OAuth credentials and redirect URI in the Clerk Dashboard. The first verified sign-in automatically creates an owner workspace in D1.
 
 ### Local D1 setup
 
