@@ -68,22 +68,9 @@ export default function AgencyMarketingPage() {
           </div>
           <Card className="overflow-hidden">
             <CardContent className="flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
-              <div className="order-last flex w-full flex-col justify-center gap-4 border-t-2 pt-6 lg:flex-row lg:items-center lg:justify-between lg:gap-8">
-                <div className="flex flex-wrap gap-2">
-                  <Badge className="w-fit border-2" variant="outline">Digital agencies · New company introduction</Badge>
-                  <Badge className="w-fit border-2 bg-[hsl(var(--chart-2))]" variant="outline">Letters from 99p</Badge>
-                </div>
-                <h3 className="text-2xl font-black">Show the recipient what you can help them do next.</h3>
-                <p className="text-sm leading-6 text-muted-foreground">
-                  Every field can be customised in Agency Mode. Choose the audience, select your services, add your logo and preview the exact letter before it goes to approval.
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {['Website launch', 'Branding', 'SEO', 'Paid media'].map((service) => (
-                    <Badge key={service} variant="secondary">{service}</Badge>
-                  ))}
-                </div>
-                <Button asChild className="w-fit" size="lg">
-                  <Link href="/agency-login">Create your letter <ArrowRight className="size-4" /></Link>
+              <div className="order-last flex w-full justify-center border-t-2 pt-6">
+                <Button asChild className="w-full sm:w-auto" size="lg">
+                  <Link href="/agency-login">Reach new companies the day after incorporation <ArrowRight className="size-4" /></Link>
                 </Button>
               </div>
               <article className="order-first w-full overflow-hidden border-2 bg-white text-black shadow-[5px_5px_0_0_hsl(var(--foreground))]" aria-label="Example direct mail letter">
@@ -130,7 +117,6 @@ export default function AgencyMarketingPage() {
                     <p className="font-black">All the best,</p>
                     <p className="mt-1 font-semibold">Alex Morgan · Northstar Digital</p>
                     <p className="mt-4 text-xs leading-5 text-black/70">northstardigital.co.uk · hello@northstardigital.co.uk · 020 7946 0958</p>
-                    <p className="mt-3 text-[10px] leading-4 text-black/55">Printed and posted via Stannp. Usually delivered in 4–5 working days via Royal Mail or the carrier selected by Stannp. Delivery times are estimates, not guaranteed.</p>
                     <p className="mt-2 text-[10px] leading-4 text-black/50">To opt out of future post, use reference NS-EXAMPLE-2048.</p>
                   </div>
                 </div>
