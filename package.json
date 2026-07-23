@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "HOME=$PWD/.wrangler-home WRANGLER_LOG_PATH=$PWD/.wrangler/logs next dev --turbopack",
     "next:build": "next build",
     "build": "opennextjs-cloudflare build",
     "cf:build": "npm run build",

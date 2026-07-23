@@ -64,6 +64,8 @@ interface CompaniesHouseItem {
   company_status?: string
   company_type?: string
   registered_office_address?: {
+    address_line_1?: string
+    address_line_2?: string
     locality?: string
     region?: string
     postal_code?: string
@@ -72,9 +74,23 @@ interface CompaniesHouseItem {
   sic_codes?: string[]
 }
 
+export interface CompaniesHousePostalAddress { address1: string; address2?: string; town: string; county?: string; postcode: string; country: string }
+
 interface CompaniesHouseAdvancedSearchResponse {
   hits?: number
   items?: CompaniesHouseItem[]
+}
+
+export interface CompaniesHouseEventSource {
+  key: string
+  eventType:
+    | "company.filing.changed"
+    | "company.officer.changed"
+    | "company.psc.changed"
+    | "company.charge.created"
+    | "company.status.changed"
+  records: Array<Record<string, unknown>>
+  eventAt: (record: Record<string, unknown>) => string
 }
 
 interface DailyCompaniesResult {
@@ -357,6 +373,55 @@ export async function fetchCompaniesForSicAlerts(
   return Array.from(
     new Map(companies.map((company) => [company.companyNumber, company])).values()
   )
+}
+
+export async function fetchCompanyEventSources(
+  apiKey: string,
+  companyNumber: string
+): Promise<CompaniesHouseEventSource[]> {
+  const companyUrl = `https://api.company-information.service.gov.uk/company/${encodeURIComponent(companyNumber)}`
+  const definitions: Array<Omit<CompaniesHouseEventSource, "records"> & { url: string; recordsFrom: (payload: Record<string, unknown>) => Array<Record<string, unknown>> }> = [
+    { key: "profile", eventType: "company.status.changed", url: companyUrl, recordsFrom: (payload) => [payload], eventAt: (record) => String(record.date_of_creation ?? new Date().toISOString()) },
+    { key: "filing-history", eventType: "company.filing.changed", url: `${companyUrl}/filing-history?items_per_page=25`, recordsFrom: itemsFrom, eventAt: (record) => String(record.date ?? record.action_date ?? new Date().toISOString()) },
+    { key: "officers", eventType: "company.officer.changed", url: `${companyUrl}/officers?items_per_page=25`, recordsFrom: itemsFrom, eventAt: (record) => String(record.appointed_on ?? record.resigned_on ?? new Date().toISOString()) },
+    { key: "psc", eventType: "company.psc.changed", url: `${companyUrl}/persons-with-significant-control?items_per_page=25`, recordsFrom: itemsFrom, eventAt: (record) => String(record.notified_on ?? record.ceased_on ?? new Date().toISOString()) },
+    { key: "charges", eventType: "company.charge.created", url: `${companyUrl}/charges?items_per_page=25`, recordsFrom: itemsFrom, eventAt: (record) => String(record.created_on ?? record.delivered_on ?? new Date().toISOString()) },
+  ]
+
+  return Promise.all(definitions.map(async (definition) => {
+    const payload = await fetchCompaniesHouseDocument(apiKey, definition.url)
+    return { key: definition.key, eventType: definition.eventType, records: definition.recordsFrom(payload), eventAt: definition.eventAt }
+  }))
+}
+
+export async function fetchCompanyPostalAddress(apiKey: string, companyNumber: string): Promise<CompaniesHousePostalAddress> {
+  const payload = await fetchCompaniesHouseDocument(apiKey, `https://api.company-information.service.gov.uk/company/${encodeURIComponent(companyNumber)}`)
+  const office = (payload.registered_office_address ?? {}) as Record<string, unknown>
+  const address1 = String(office.address_line_1 ?? "").trim()
+  const town = String(office.locality ?? "").trim()
+  const postcode = String(office.postal_code ?? "").trim()
+  if (!address1 || !town || !postcode) throw new Error("Companies House did not return a complete registered-office address.")
+  return { address1, address2: String(office.address_line_2 ?? "").trim() || undefined, town, county: String(office.region ?? "").trim() || undefined, postcode, country: String(office.country ?? "GB").trim() || "GB" }
+}
+
+async function fetchCompaniesHouseDocument(apiKey: string, url: string): Promise<Record<string, unknown>> {
+  let lastStatus = 0
+  for (let attempt = 0; attempt < MAX_COMPANIES_HOUSE_RETRIES; attempt += 1) {
+    const response = await fetch(url, { headers: { Authorization: `Basic ${Buffer.from(`${apiKey}:`).toString("base64")}` }, cache: "no-store" })
+    if (response.ok) return (await response.json()) as Record<string, unknown>
+    lastStatus = response.status
+    if (response.status === 404) return {}
+    if (response.status === 401) throw new Error("Companies House rejected the API key.")
+    if ((response.status < 500 && response.status !== 429) || attempt === MAX_COMPANIES_HOUSE_RETRIES - 1) break
+    await sleep(500 * (attempt + 1))
+  }
+  throw new Error(`Companies House request failed with status ${lastStatus}.`)
+}
+
+function itemsFrom(payload: Record<string, unknown>) {
+  return Array.isArray(payload.items)
+    ? payload.items.filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object")
+    : []
 }
 
 function sleep(ms: number) {

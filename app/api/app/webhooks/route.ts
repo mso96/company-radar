@@ -1,0 +1,6 @@
+import { NextResponse } from "next/server"
+import { getWebhookForRadar, saveWebhook } from "@/lib/agency/db"
+import { agencyError, getAgencyRequestContext } from "@/lib/agency/request"
+
+export async function GET(request: Request) { try { const { db, session } = await getAgencyRequestContext(); const radarId = new URL(request.url).searchParams.get("radarId"); if (!radarId) throw new Error("radarId is required."); return NextResponse.json({ endpoint: await getWebhookForRadar(db, session.workspaceId, radarId) }) } catch (error) { return agencyError(error) } }
+export async function POST(request: Request) { try { const { db, session } = await getAgencyRequestContext(true); const { radarId, url, isActive } = (await request.json()) as { radarId?: string; url?: string; isActive?: boolean }; if (!radarId || !url) throw new Error("A radar and webhook URL are required."); const parsed = new URL(url); if (!["https:", "http:"].includes(parsed.protocol)) throw new Error("Webhook URL must use HTTP or HTTPS."); return NextResponse.json({ endpoint: await saveWebhook(db, session.workspaceId, radarId, parsed.toString(), isActive ?? true) }, { status: 201 }) } catch (error) { return agencyError(error) } }

@@ -97,7 +97,7 @@ export function AlertsSignupSection() {
   }
 
   return (
-    <section className="grid gap-5 lg:grid-cols-[1.2fr_0.8fr]">
+    <section id="alerts" className="grid gap-5 lg:grid-cols-[1.2fr_0.8fr]">
       <Card className="overflow-hidden">
         <CardHeader className="gap-4 border-b-2 bg-card">
           <div className="flex items-center gap-3">

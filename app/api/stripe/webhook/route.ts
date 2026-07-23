@@ -4,6 +4,8 @@ import { getStripe } from "@/lib/stripe"
 import { upsertAlertSubscription, updateAlertSubscriptionStatus } from "@/lib/alerts/db"
 import { sendWelcomeAlertEmail } from "@/lib/alerts/email"
 import { sendTelegramSubscriberNotification } from "@/lib/alerts/telegram"
+import { ensureAgencyUserAndWorkspace } from "@/lib/agency/db"
+import { addCredits } from "@/lib/agency/mail"
 import {
   getAlertsRuntimeEnv,
   requireAlertsDatabase,
@@ -21,8 +23,6 @@ export async function POST(request: Request) {
       "STRIPE_WEBHOOK_SECRET"
     )
     const db = requireAlertsDatabase(env)
-    const resendApiKey = requireEnvValue(env.RESEND_API_KEY, "RESEND_API_KEY")
-    const from = requireEnvValue(env.ALERT_FROM_EMAIL, "ALERT_FROM_EMAIL")
     const stripe = getStripe(stripeSecretKey)
     const signature = request.headers.get("stripe-signature")
 
@@ -39,9 +39,19 @@ export async function POST(request: Request) {
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session
+        if (session.mode === "payment" && session.metadata?.kind === "agency_credit") {
+          const workspaceId = session.metadata.workspace_id
+          const credits = Number(session.metadata.credits)
+          if (!workspaceId || !Number.isInteger(credits) || credits <= 0) throw new Error("Credit checkout metadata is incomplete.")
+          await addCredits(db, { workspaceId, credits, checkoutSessionId: session.id })
+          break
+        }
         if (session.mode !== "subscription") {
           break
         }
+
+        const resendApiKey = requireEnvValue(env.RESEND_API_KEY, "RESEND_API_KEY")
+        const from = requireEnvValue(env.ALERT_FROM_EMAIL, "ALERT_FROM_EMAIL")
 
         const email =
           session.customer_details?.email ??
@@ -69,6 +79,7 @@ export async function POST(request: Request) {
           status: "active",
           sicCodes,
         })
+        await ensureAgencyUserAndWorkspace(db, email)
 
         await sendWelcomeAlertEmail({
           resendApiKey,

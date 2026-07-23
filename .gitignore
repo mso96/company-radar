@@ -2,5 +2,14 @@ node_modules
 .next
 .open-next
 .wrangler
+.wrangler-home
+.wrangler-local
 .env.local
+.env
+.env.*
+!.env.example
+.dev.vars
+.dev.vars.*
+.npm-cache
+tsconfig.tsbuildinfo
 npm-debug.log*
