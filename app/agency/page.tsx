@@ -1,11 +1,10 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { ArrowRight, Building2, Calculator, Check, Mail, Search, ShoppingBag, Sparkles } from "lucide-react"
+import { ArrowRight, Building2, Check, Dumbbell, Mail, Search, ShoppingBag, Utensils } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { MarketingHeader } from "@/components/marketing/marketing-header"
-import { SECTOR_LANDING_PAGES } from "@/lib/sector-landing-pages"
 
 export const metadata: Metadata = {
   title: "Agency Intelligence | UK Company Radar",
@@ -14,10 +13,17 @@ export const metadata: Metadata = {
 }
 
 const audiences = [
-  { name: "Digital agencies", description: "Find new businesses before their first website, rebrand or growth brief.", href: "/new-ai-companies", action: "Explore AI & software radar", icon: Sparkles },
-  { name: "Property services", description: "Follow fresh property businesses for finance, insurance and service opportunities.", href: "/new-property-companies", action: "Explore property radar", icon: Building2 },
-  { name: "Ecommerce services", description: "Spot new merchants early for store builds, fulfilment and paid media support.", href: "/new-ecommerce-companies", action: "Explore ecommerce radar", icon: ShoppingBag },
-  { name: "Accounting firms", description: "Reach newly formed companies before their first filing and advisory decisions.", href: "/contact", action: "Talk about accounting leads", icon: Calculator },
+  { name: "Ecommerce businesses", description: "Reach new online retailers before their first store, campaign or fulfilment decision.", href: "/new-ecommerce-companies", action: "Find ecommerce companies", icon: ShoppingBag },
+  { name: "Gyms & fitness studios", description: "Meet new gyms early with offers for memberships, local growth and launch marketing.", href: "/agency-login", action: "Build a fitness campaign", icon: Dumbbell },
+  { name: "Restaurants & hospitality", description: "Find new venues before opening night with a focused local outreach campaign.", href: "/agency-login", action: "Build a hospitality campaign", icon: Utensils },
+  { name: "Property businesses", description: "Reach new property, estate and development companies while plans are still taking shape.", href: "/new-property-companies", action: "Find property companies", icon: Building2 },
+]
+
+const targetProfiles = [
+  { title: "New ecommerce businesses", description: "Online retailers and new merchants preparing their first store and growth plan.", href: "/new-ecommerce-companies" },
+  { title: "New gyms & fitness studios", description: "Fitness businesses looking for memberships, local visibility and a strong launch.", href: "/agency-login" },
+  { title: "New restaurants & hospitality", description: "New venues and hospitality teams building awareness before their opening day.", href: "/agency-login" },
+  { title: "New property businesses", description: "Property, estate and development companies making their first commercial moves.", href: "/new-property-companies" },
 ]
 
 export default function AgencyMarketingPage() {
@@ -97,7 +103,7 @@ export default function AgencyMarketingPage() {
                     <span className="border-2 border-black px-2 py-1 text-[10px] font-black uppercase tracking-wide">A warm hello</span>
                   </div>
                   <div className="mt-7 space-y-4 text-sm leading-6 sm:text-base">
-                    <p>Hello <strong>Signal Forge AI Ltd</strong>,</p>
+                    <p>Hello <strong>Harbour Business Support Ltd</strong>,</p>
                     <p>First of all, a huge congratulations on starting your new company. It&apos;s an exciting step, and we know there is a lot to get moving at once.</p>
                     <p>We help new businesses get a confident first impression and a practical plan for finding customers:</p>
                     <ul className="list-disc space-y-1 pl-5 font-semibold">
@@ -106,7 +112,7 @@ export default function AgencyMarketingPage() {
                       <li>SEO to help the right people find you</li>
                       <li>Paid media when you are ready to grow</li>
                     </ul>
-                    <p>If it would be useful, we&apos;d love to have a friendly 15-minute chat and share a few ideas for Signal Forge AI Ltd. No hard sell, just useful next steps.</p>
+                    <p>If it would be useful, we&apos;d love to have a friendly 15-minute chat and share a few ideas for Harbour Business Support Ltd. No hard sell, just useful next steps.</p>
                   </div>
                   <div className="mt-6 grid gap-4 border-2 border-black bg-[hsl(var(--chart-2))] p-4 sm:grid-cols-[1fr_auto] sm:items-center">
                     <div>
@@ -169,7 +175,7 @@ export default function AgencyMarketingPage() {
         <section id="sector-radars" className="order-5 scroll-mt-6">
           <div className="mb-4"><p className="text-sm font-bold uppercase tracking-wide text-muted-foreground">Target company profiles</p><h2 className="mt-1 text-3xl font-black">Choose the companies you want to reach.</h2><p className="mt-2 max-w-2xl text-muted-foreground">Start with a profile of newly incorporated companies, then customise the audience and letter in Agency Mode.</p></div>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {SECTOR_LANDING_PAGES.map((sector) => <Card key={sector.slug} className="flex flex-col"><CardHeader className="p-4"><CardTitle className="text-lg">{sector.title}</CardTitle><CardDescription className="text-sm leading-5">{sector.description}</CardDescription></CardHeader><CardContent className="mt-auto p-4 pt-0"><Link className="inline-flex items-center gap-2 text-sm font-black underline-offset-4 hover:underline" href={`/${sector.slug}`}>See matching companies <ArrowRight className="size-4" /></Link></CardContent></Card>)}
+            {targetProfiles.map((profile) => <Card key={profile.title} className="flex flex-col"><CardHeader className="p-4"><CardTitle className="text-lg">{profile.title}</CardTitle><CardDescription className="text-sm leading-5">{profile.description}</CardDescription></CardHeader><CardContent className="mt-auto p-4 pt-0"><Link className="inline-flex items-center gap-2 text-sm font-black underline-offset-4 hover:underline" href={profile.href}>Reach this profile <ArrowRight className="size-4" /></Link></CardContent></Card>)}
           </div>
         </section>
 
