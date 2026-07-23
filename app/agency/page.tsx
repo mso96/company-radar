@@ -108,7 +108,7 @@ export default function AgencyMarketingPage() {
                     </ul>
                     <p>If it would be useful, we&apos;d love to have a friendly 15-minute chat and share a few ideas for Signal Forge AI Ltd. No hard sell, just useful next steps.</p>
                   </div>
-                  <div className="mt-6 grid gap-4 border-2 border-black bg-[hsl(var(--chart-2))] p-4 sm:grid-cols-[1fr_auto] sm:items-center">
+                  <div className="mt-6 grid gap-4 border-2 border-black bg-[hsl(var(--chart-5))] p-4 text-white sm:grid-cols-[1fr_auto] sm:items-center">
                     <div>
                       <p className="text-sm font-black">Book a friendly 15-minute chat</p>
                       <p className="mt-1 text-xs font-semibold">Scan to choose a time: northstardigital.co.uk/start</p>
@@ -121,6 +121,16 @@ export default function AgencyMarketingPage() {
                     <p className="mt-1 font-semibold">Alex Morgan · Northstar Digital</p>
                     <p className="mt-4 text-xs leading-5 text-black/70">northstardigital.co.uk · hello@northstardigital.co.uk · 020 7946 0958</p>
                     <p className="mt-2 text-[10px] leading-4 text-black/50">To opt out of future post, use reference NS-EXAMPLE-2048.</p>
+                  </div>
+                  <div className="mt-7 grid gap-3 border-t-2 pt-5 sm:grid-cols-2">
+                    <div className="border-2 border-black p-3">
+                      <p className="text-xs font-black uppercase tracking-wide">Built for day one</p>
+                      <p className="mt-2 text-xs leading-5 text-black/70">A practical partner for your first website, first campaign and first customers.</p>
+                    </div>
+                    <div className="border-2 border-black p-3">
+                      <p className="text-xs font-black uppercase tracking-wide">Your new company offer</p>
+                      <p className="mt-2 text-xs leading-5 text-black/70">Mention this letter when you book and we&apos;ll apply your 50% launch discount.</p>
+                    </div>
                   </div>
                 </div>
               </article>
