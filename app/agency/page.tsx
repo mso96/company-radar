@@ -91,10 +91,13 @@ export default function AgencyMarketingPage() {
                 <div className="p-5 sm:p-8">
                   <div className="flex items-start justify-between gap-4 border-b-4 border-[hsl(var(--chart-2))] pb-5">
                     <div className="flex items-center gap-3">
-                      <div className="flex size-11 items-center justify-center border-2 bg-[hsl(var(--chart-2))] text-sm font-black shadow-[3px_3px_0_0_black]">NS</div>
+                      <div className="relative flex size-12 items-center justify-center border-2 bg-[hsl(var(--chart-2))] text-sm font-black shadow-[3px_3px_0_0_black]" aria-label="Northstar Digital logo">
+                        <span className="absolute -right-1 -top-1 size-3 border-2 border-black bg-white" />
+                        NS
+                      </div>
                       <div>
-                        <p className="text-lg font-black tracking-tight">Northstar Digital</p>
-                        <p className="mt-1 text-xs text-black/60">Web, brand and growth support</p>
+                        <p className="text-lg font-black uppercase tracking-tight">Northstar Digital</p>
+                        <p className="mt-1 text-xs font-semibold text-black/60">Make your next move matter.</p>
                       </div>
                     </div>
                     <span className="border-2 border-black px-2 py-1 text-[10px] font-black uppercase tracking-wide">A warm hello</span>
@@ -111,7 +114,14 @@ export default function AgencyMarketingPage() {
                     </ul>
                     <p>If it would be useful, we&apos;d love to have a friendly 15-minute chat and share a few ideas for Signal Forge AI Ltd. No hard sell, just useful next steps.</p>
                   </div>
-                  <div className="mt-6 border-2 border-black bg-[hsl(var(--chart-2))] px-4 py-3 text-center text-sm font-black">Book a friendly 15-minute chat → northstardigital.co.uk/start</div>
+                  <div className="mt-6 grid gap-4 border-2 border-black bg-[hsl(var(--chart-2))] p-4 sm:grid-cols-[1fr_auto] sm:items-center">
+                    <div>
+                      <p className="text-sm font-black">Book a friendly 15-minute chat</p>
+                      <p className="mt-1 text-xs font-semibold">Scan to choose a time: northstardigital.co.uk/start</p>
+                    </div>
+                    <img className="size-24 border-2 border-black bg-white p-1" src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&margin=8&data=https%3A%2F%2Fnorthstardigital.co.uk%2Fstart" alt="QR code for the Northstar Digital booking page" loading="lazy" />
+                  </div>
+                  <div className="mt-4 border-2 border-black bg-black px-4 py-3 text-center text-sm font-black text-white">New company offer: 50% off your first project</div>
                   <div className="mt-7 border-t-2 pt-5">
                     <p className="font-black">All the best,</p>
                     <p className="mt-1 font-semibold">Alex Morgan · Northstar Digital</p>
