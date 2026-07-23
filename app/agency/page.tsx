@@ -58,6 +58,61 @@ export default function AgencyMarketingPage() {
           </div>
         </section>
 
+        <section className="scroll-mt-6" aria-labelledby="example-letter-heading">
+          <div className="mb-4">
+            <p className="text-sm font-bold uppercase tracking-wide text-muted-foreground">Example letter</p>
+            <h2 id="example-letter-heading" className="mt-1 text-3xl font-black">A letter your new-company campaign can send.</h2>
+            <p className="mt-2 max-w-2xl text-muted-foreground">
+              Start with a ready-made message, then make it yours with your services, branding and call to action before you approve a batch.
+            </p>
+          </div>
+          <Card className="overflow-hidden">
+            <CardContent className="grid gap-6 p-4 sm:p-6 lg:grid-cols-[minmax(0,0.85fr)_minmax(280px,1.15fr)] lg:p-8">
+              <div className="flex flex-col justify-center gap-4">
+                <Badge className="w-fit border-2" variant="outline">Digital agencies · New company introduction</Badge>
+                <h3 className="text-2xl font-black">Show the recipient what you can help them do next.</h3>
+                <p className="text-sm leading-6 text-muted-foreground">
+                  Every field can be customised in Agency Mode. Choose the audience, select your services, add your logo and preview the exact letter before it goes to approval.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {['Website launch', 'Branding', 'SEO', 'Paid media'].map((service) => (
+                    <Badge key={service} variant="secondary">{service}</Badge>
+                  ))}
+                </div>
+                <Button asChild className="w-fit" size="lg">
+                  <Link href="/agency-login">Create your letter <ArrowRight className="size-4" /></Link>
+                </Button>
+              </div>
+              <article className="mx-auto w-full max-w-[520px] border-2 bg-white p-5 text-black shadow-[5px_5px_0_0_hsl(var(--foreground))] sm:p-8" aria-label="Example direct mail letter">
+                <div className="flex items-start justify-between gap-4 border-b-4 border-[hsl(var(--chart-2))] pb-5">
+                  <div>
+                    <p className="text-lg font-black tracking-tight">Northstar Digital</p>
+                    <p className="mt-1 text-xs text-black/60">Web, brand and growth support</p>
+                  </div>
+                  <span className="border-2 border-black px-2 py-1 text-[10px] font-black uppercase tracking-wide">New company</span>
+                </div>
+                <div className="mt-7 space-y-4 text-sm leading-6 sm:text-base">
+                  <p>Hello <strong>Signal Forge AI Ltd</strong>,</p>
+                  <p>Congratulations on your new company. The early stage is a useful time to put the right foundations in place before opportunities start moving quickly.</p>
+                  <p>We help new businesses with:</p>
+                  <ul className="list-disc space-y-1 pl-5 font-semibold">
+                    <li>Website launch and conversion-ready pages</li>
+                    <li>Branding that gives your team a clear first impression</li>
+                    <li>SEO and paid media to build a reliable pipeline</li>
+                  </ul>
+                  <p>Would a short introduction be useful? We would be happy to share a few practical ideas for Signal Forge AI Ltd.</p>
+                </div>
+                <div className="mt-7 border-t-2 pt-5">
+                  <p className="font-black">Best wishes,</p>
+                  <p className="mt-1 font-semibold">Alex Morgan · Northstar Digital</p>
+                  <p className="mt-4 text-xs leading-5 text-black/60">northstardigital.co.uk · hello@northstardigital.co.uk</p>
+                  <p className="mt-2 text-[10px] leading-4 text-black/50">To opt out of future post, use reference NS-EXAMPLE-2048.</p>
+                </div>
+              </article>
+            </CardContent>
+          </Card>
+        </section>
+
         <section id="how-it-works" className="scroll-mt-6">
           <div className="mb-4"><p className="text-sm font-bold uppercase tracking-wide text-muted-foreground">How it works</p><h2 className="mt-1 text-3xl font-black">From company signal to approved letter.</h2></div>
           <div className="grid gap-4 md:grid-cols-3">
