@@ -76,7 +76,7 @@ export default function AgencyMarketingPage() {
                   <Link href="/agency-login">Reach new companies the day after incorporation <ArrowRight className="size-4" /></Link>
                 </Button>
               </div>
-              <article className="order-first w-full overflow-hidden border-2 bg-white text-black shadow-[5px_5px_0_0_hsl(var(--foreground))]" aria-label="Example direct mail letter">
+              <article className="order-first mx-auto aspect-[210/297] w-full max-w-[820px] overflow-hidden border-2 bg-white text-black shadow-[5px_5px_0_0_hsl(var(--foreground))]" aria-label="Example A4 direct mail letter">
                 <div className="bg-black px-5 py-2 text-center text-[10px] font-black uppercase tracking-[0.18em] text-white sm:px-8">New company? Let&apos;s make your next step easier.</div>
                 <div className="p-5 sm:p-8">
                   <div className="flex items-start justify-between gap-4 border-b-4 border-[hsl(var(--chart-2))] pb-5">
