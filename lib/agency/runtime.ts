@@ -9,6 +9,8 @@ export interface AgencyRuntimeEnv {
   STRIPE_SECRET_KEY?: string
   STRIPE_WEBHOOK_SECRET?: string
   STANNP_API_KEY?: string
+  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?: string
+  CLERK_SECRET_KEY?: string
 }
 
 export async function getAgencyRuntimeEnv(): Promise<AgencyRuntimeEnv> {
@@ -23,6 +25,8 @@ export async function getAgencyRuntimeEnv(): Promise<AgencyRuntimeEnv> {
     STRIPE_SECRET_KEY: context.env.STRIPE_SECRET_KEY ?? process.env.STRIPE_SECRET_KEY,
     STRIPE_WEBHOOK_SECRET: context.env.STRIPE_WEBHOOK_SECRET ?? process.env.STRIPE_WEBHOOK_SECRET,
     STANNP_API_KEY: (context.env as unknown as { STANNP_API_KEY?: string }).STANNP_API_KEY ?? process.env.STANNP_API_KEY,
+    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: (context.env as unknown as { NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?: string }).NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
+    CLERK_SECRET_KEY: (context.env as unknown as { CLERK_SECRET_KEY?: string }).CLERK_SECRET_KEY ?? process.env.CLERK_SECRET_KEY,
   } as AgencyRuntimeEnv
 }
 

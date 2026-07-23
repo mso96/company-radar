@@ -16,13 +16,21 @@ import type {
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
-export async function ensureAgencyUserAndWorkspace(db: D1Database, emailInput: string) {
+export async function ensureAgencyUserAndWorkspace(db: D1Database, emailInput: string, clerkUserId?: string) {
   const email = emailInput.trim().toLowerCase()
   const now = new Date().toISOString()
-  const existing = await db.prepare(`SELECT id FROM agency_users WHERE email = ?1`).bind(email).first<{ id: string }>()
+  const existing = clerkUserId
+    ? await db.prepare(`SELECT id, clerk_user_id FROM agency_users WHERE clerk_user_id = ?1 OR email = ?2 ORDER BY CASE WHEN clerk_user_id = ?1 THEN 0 ELSE 1 END LIMIT 1`).bind(clerkUserId, email).first<{ id: string; clerk_user_id: string | null }>()
+    : await db.prepare(`SELECT id, clerk_user_id FROM agency_users WHERE email = ?1`).bind(email).first<{ id: string; clerk_user_id: string | null }>()
   const userId = existing?.id ?? crypto.randomUUID()
   if (!existing) {
-    await db.prepare(`INSERT INTO agency_users (id, email, created_at, updated_at) VALUES (?1, ?2, ?3, ?3)`).bind(userId, email, now).run()
+    if (clerkUserId) {
+      await db.prepare(`INSERT INTO agency_users (id, email, clerk_user_id, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?4)`).bind(userId, email, clerkUserId, now).run()
+    } else {
+      await db.prepare(`INSERT INTO agency_users (id, email, created_at, updated_at) VALUES (?1, ?2, ?3, ?3)`).bind(userId, email, now).run()
+    }
+  } else if (clerkUserId && !existing.clerk_user_id) {
+    await db.prepare(`UPDATE agency_users SET clerk_user_id = ?1, updated_at = ?2 WHERE id = ?3`).bind(clerkUserId, now, userId).run()
   }
   const membership = await db.prepare(`SELECT workspace_id FROM agency_workspace_members WHERE user_id = ?1 ORDER BY created_at ASC LIMIT 1`).bind(userId).first<{ workspace_id: string }>()
   if (membership) return { userId, workspaceId: membership.workspace_id }
@@ -58,6 +66,11 @@ export async function consumeMagicLink(db: D1Database, token: string) {
 
 export async function getAgencySession(db: D1Database, token: string): Promise<AgencySession | null> {
   const row = await db.prepare(`SELECT s.user_id, u.email, m.workspace_id, w.name AS workspace_name, m.role FROM agency_sessions s JOIN agency_users u ON u.id = s.user_id JOIN agency_workspace_members m ON m.user_id = u.id JOIN agency_workspaces w ON w.id = m.workspace_id WHERE s.token_hash = ?1 AND s.expires_at > ?2 ORDER BY m.created_at ASC LIMIT 1`).bind(hashToken(token), new Date().toISOString()).first<{ user_id: string; email: string; workspace_id: string; workspace_name: string; role: WorkspaceRole }>()
+  return row ? { userId: row.user_id, email: row.email, workspaceId: row.workspace_id, workspaceName: row.workspace_name, role: row.role } : null
+}
+
+export async function getAgencySessionForUser(db: D1Database, userId: string): Promise<AgencySession | null> {
+  const row = await db.prepare(`SELECT u.id AS user_id, u.email, m.workspace_id, w.name AS workspace_name, m.role FROM agency_users u JOIN agency_workspace_members m ON m.user_id = u.id JOIN agency_workspaces w ON w.id = m.workspace_id WHERE u.id = ?1 ORDER BY m.created_at ASC LIMIT 1`).bind(userId).first<{ user_id: string; email: string; workspace_id: string; workspace_name: string; role: WorkspaceRole }>()
   return row ? { userId: row.user_id, email: row.email, workspaceId: row.workspace_id, workspaceName: row.workspace_name, role: row.role } : null
 }
 
