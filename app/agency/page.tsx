@@ -91,9 +91,13 @@ export default function AgencyMarketingPage() {
                 <div className="p-5 sm:p-8">
                   <div className="flex items-start justify-between gap-4 border-b-4 border-[hsl(var(--chart-2))] pb-5">
                     <div className="flex items-center gap-3">
-                      <div className="relative flex size-12 items-center justify-center border-2 bg-[hsl(var(--chart-2))] text-sm font-black shadow-[3px_3px_0_0_black]" aria-label="Northstar Digital logo">
-                        <span className="absolute -right-1 -top-1 size-3 border-2 border-black bg-white" />
-                        NS
+                      <div className="relative flex size-12 items-center justify-center border-2 bg-[hsl(var(--chart-2))] shadow-[3px_3px_0_0_black]" aria-label="Northstar Digital logo">
+                        <svg className="size-9" viewBox="0 0 48 48" role="img" aria-hidden="true">
+                          <circle cx="24" cy="24" r="18" fill="none" stroke="currentColor" strokeWidth="2.5" />
+                          <path d="M24 5 28 20 43 24 28 28 24 43 20 28 5 24 20 20Z" fill="currentColor" />
+                          <path d="m24 10 2.2 11.8L38 24l-11.8 2.2L24 38l-2.2-11.8L10 24l11.8-2.2Z" fill="hsl(var(--chart-2))" />
+                          <circle cx="24" cy="24" r="3" fill="currentColor" />
+                        </svg>
                       </div>
                       <div>
                         <p className="text-lg font-black uppercase tracking-tight">Northstar Digital</p>
