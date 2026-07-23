@@ -26,7 +26,7 @@ export default function AgencyMarketingPage() {
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-7 sm:px-6 lg:px-8">
         <MarketingHeader />
 
-        <section className="overflow-hidden border-2 bg-card shadow-[6px_6px_0_0_hsl(var(--foreground))]">
+        <section className="order-1 overflow-hidden border-2 bg-card shadow-[6px_6px_0_0_hsl(var(--foreground))]">
           <div className="grid gap-8 px-5 py-8 sm:px-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:px-10 lg:py-12">
             <div>
               <Badge className="border-2" variant="outline">Agency Mode · free workspace</Badge>
@@ -51,16 +51,19 @@ export default function AgencyMarketingPage() {
           <div className="grid grid-cols-4 border-t-2"><div className="h-3 bg-[hsl(var(--chart-1))]" /><div className="h-3 bg-[hsl(var(--chart-2))]" /><div className="h-3 bg-[hsl(var(--chart-3))]" /><div className="h-3 bg-[hsl(var(--chart-4))]" /></div>
         </section>
 
-        <section id="for-who" className="scroll-mt-6">
+        <section id="for-who" className="order-3 scroll-mt-6">
           <div className="mb-4"><p className="text-sm font-bold uppercase tracking-wide text-muted-foreground">For who</p><h2 className="mt-1 text-3xl font-black">Built for teams selling into new businesses.</h2><p className="mt-2 max-w-2xl text-muted-foreground">Start with the audience closest to your offer. You can change the filters and letter before activating a radar.</p></div>
           <div className="grid gap-4 md:grid-cols-2">
             {audiences.map(({ name, description, href, action, icon: Icon }) => <Card key={name}><CardHeader><div className="mb-2 flex size-10 items-center justify-center border-2 bg-[hsl(var(--chart-3))]"><Icon className="size-5" /></div><CardTitle>{name}</CardTitle><CardDescription>{description}</CardDescription></CardHeader><CardContent><Button asChild variant="outline"><Link href={href}>{action} <ArrowRight className="size-4" /></Link></Button></CardContent></Card>)}
           </div>
         </section>
 
-        <section className="scroll-mt-6" aria-labelledby="example-letter-heading">
+        <section className="order-2 scroll-mt-6" aria-labelledby="example-letter-heading">
           <div className="mb-4">
-            <p className="text-sm font-bold uppercase tracking-wide text-muted-foreground">Example letter</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-sm font-bold uppercase tracking-wide text-muted-foreground">Physical letter preview</p>
+              <Badge className="border-2 bg-[hsl(var(--chart-2))]" variant="outline">Printed &amp; posted</Badge>
+            </div>
             <h2 id="example-letter-heading" className="mt-1 text-3xl font-black">A letter your new-company campaign can send.</h2>
             <p className="mt-2 max-w-2xl text-muted-foreground">
               Start with a ready-made message, then make it yours with your services, branding and call to action before you approve a batch.
@@ -125,7 +128,7 @@ export default function AgencyMarketingPage() {
           </Card>
         </section>
 
-        <section id="how-it-works" className="scroll-mt-6">
+        <section id="how-it-works" className="order-4 scroll-mt-6">
           <div className="mb-4"><p className="text-sm font-bold uppercase tracking-wide text-muted-foreground">How it works</p><h2 className="mt-1 text-3xl font-black">From company signal to approved letter.</h2></div>
           <div className="grid gap-4 md:grid-cols-3">
             <ProcessCard number="01" title="Filter the right companies" text="Set SIC codes, city or region, postcode prefixes and company age. Your radar only watches the audience you can serve." />
@@ -134,14 +137,14 @@ export default function AgencyMarketingPage() {
           </div>
         </section>
 
-        <section id="sector-radars" className="scroll-mt-6">
+        <section id="sector-radars" className="order-5 scroll-mt-6">
           <div className="mb-4"><p className="text-sm font-bold uppercase tracking-wide text-muted-foreground">Sector radars</p><h2 className="mt-1 text-3xl font-black">See the signal before you build a campaign.</h2><p className="mt-2 max-w-2xl text-muted-foreground">These public previews show the kind of newly incorporated companies each audience contains. Open Agency Mode to customise the filters and letter.</p></div>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {SECTOR_LANDING_PAGES.map((sector) => <Card key={sector.slug} className="flex flex-col"><CardHeader><CardTitle className="text-xl">{sector.sector}</CardTitle><CardDescription>{sector.description}</CardDescription></CardHeader><CardContent className="mt-auto"><div className="mb-4 flex flex-wrap gap-1">{sector.sicCodes.map((code) => <Badge key={code} variant="outline">{code}</Badge>)}</div><Button asChild className="w-full" variant="secondary"><Link href={`/${sector.slug}`}>Open radar <ArrowRight className="size-4" /></Link></Button></CardContent></Card>)}
           </div>
         </section>
 
-        <section className="border-2 bg-foreground p-6 text-background shadow-[6px_6px_0_0_hsl(var(--chart-2))] sm:p-8"><div className="flex flex-col items-start justify-between gap-5 sm:flex-row sm:items-center"><div><p className="text-xs font-black uppercase tracking-wide opacity-70">Ready to test your market?</p><h2 className="mt-1 text-3xl font-black">Build your first radar in minutes.</h2><p className="mt-2 max-w-xl text-sm opacity-80">The workspace is free. Physical letters stay in review until you approve the send.</p></div><Button asChild size="lg" variant="secondary"><Link href="/agency-login">Open Agency Mode <ArrowRight className="size-4" /></Link></Button></div></section>
+        <section className="order-6 border-2 bg-foreground p-6 text-background shadow-[6px_6px_0_0_hsl(var(--chart-2))] sm:p-8"><div className="flex flex-col items-start justify-between gap-5 sm:flex-row sm:items-center"><div><p className="text-xs font-black uppercase tracking-wide opacity-70">Ready to test your market?</p><h2 className="mt-1 text-3xl font-black">Build your first radar in minutes.</h2><p className="mt-2 max-w-xl text-sm opacity-80">The workspace is free. Physical letters stay in review until you approve the send.</p></div><Button asChild size="lg" variant="secondary"><Link href="/agency-login">Open Agency Mode <ArrowRight className="size-4" /></Link></Button></div></section>
       </div>
     </main>
   )
