@@ -158,18 +158,18 @@ export default function AgencyMarketingPage() {
         </section>
 
         <section id="how-it-works" className="order-4 scroll-mt-6">
-          <div className="mb-4"><p className="text-sm font-bold uppercase tracking-wide text-muted-foreground">How it works</p><h2 className="mt-1 text-3xl font-black">From company signal to approved letter.</h2></div>
+          <div className="mb-4"><p className="text-sm font-bold uppercase tracking-wide text-muted-foreground">How it works</p><h2 className="mt-1 text-3xl font-black">From signal to letter.</h2></div>
           <div className="grid gap-4 md:grid-cols-3">
-            <ProcessCard number="01" title="Filter the right companies" text="Set SIC codes, city or region, postcode prefixes and company age. Your radar only watches the audience you can serve." />
-            <ProcessCard number="02" title="Personalise the message" text="Use a segment template, insert company merge fields, add your CTA and apply your agency branding." />
-            <ProcessCard number="03" title="Approve the batch" text="Review new leads, preview the PDF and approve the exact batch before it is submitted to the mail provider." />
+            <ProcessCard number="01" title="Choose your audience" text="SIC codes, city and company age." />
+            <ProcessCard number="02" title="Customise your letter" text="Services, branding and CTA." />
+            <ProcessCard number="03" title="Approve and send" text="Preview, approve and post." />
           </div>
         </section>
 
         <section id="sector-radars" className="order-5 scroll-mt-6">
-          <div className="mb-4"><p className="text-sm font-bold uppercase tracking-wide text-muted-foreground">Sector radars</p><h2 className="mt-1 text-3xl font-black">See the signal before you build a campaign.</h2><p className="mt-2 max-w-2xl text-muted-foreground">These public previews show the kind of newly incorporated companies each audience contains. Open Agency Mode to customise the filters and letter.</p></div>
+          <div className="mb-4"><p className="text-sm font-bold uppercase tracking-wide text-muted-foreground">Sector radars</p><h2 className="mt-1 text-3xl font-black">Start with an audience.</h2><p className="mt-2 max-w-2xl text-muted-foreground">Choose a sector, see the signal and open a campaign when you&apos;re ready.</p></div>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {SECTOR_LANDING_PAGES.map((sector) => <Card key={sector.slug} className="flex flex-col"><CardHeader><CardTitle className="text-xl">{sector.sector}</CardTitle><CardDescription>{sector.description}</CardDescription></CardHeader><CardContent className="mt-auto"><div className="mb-4 flex flex-wrap gap-1">{sector.sicCodes.map((code) => <Badge key={code} variant="outline">{code}</Badge>)}</div><Button asChild className="w-full" variant="secondary"><Link href={`/${sector.slug}`}>Open radar <ArrowRight className="size-4" /></Link></Button></CardContent></Card>)}
+            {SECTOR_LANDING_PAGES.map((sector) => <Card key={sector.slug} className="flex flex-col"><CardHeader className="p-4"><CardTitle className="text-lg">{sector.sector}</CardTitle><CardDescription className="text-sm leading-5">{sector.description}</CardDescription></CardHeader><CardContent className="mt-auto p-4 pt-0"><Link className="inline-flex items-center gap-2 text-sm font-black underline-offset-4 hover:underline" href={`/${sector.slug}`}>Open radar <ArrowRight className="size-4" /></Link></CardContent></Card>)}
           </div>
         </section>
 
@@ -184,5 +184,5 @@ function HeroStep({ number, title, text, icon: Icon }: { number: string; title: 
 }
 
 function ProcessCard({ number, title, text }: { number: string; title: string; text: string }) {
-  return <Card><CardHeader><Badge className="w-fit border-2" variant="outline">{number}</Badge><CardTitle className="text-xl">{title}</CardTitle><CardDescription>{text}</CardDescription></CardHeader></Card>
+  return <Card><CardHeader className="gap-2 p-4"><Badge className="w-fit border-2 px-2 py-0.5 text-xs" variant="outline">{number}</Badge><CardTitle className="text-lg">{title}</CardTitle><CardDescription className="text-sm leading-5">{text}</CardDescription></CardHeader></Card>
 }
