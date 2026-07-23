@@ -167,9 +167,9 @@ export default function AgencyMarketingPage() {
         </section>
 
         <section id="sector-radars" className="order-5 scroll-mt-6">
-          <div className="mb-4"><p className="text-sm font-bold uppercase tracking-wide text-muted-foreground">Sector radars</p><h2 className="mt-1 text-3xl font-black">Start with an audience.</h2><p className="mt-2 max-w-2xl text-muted-foreground">Choose a sector, see the signal and open a campaign when you&apos;re ready.</p></div>
+          <div className="mb-4"><p className="text-sm font-bold uppercase tracking-wide text-muted-foreground">Target company profiles</p><h2 className="mt-1 text-3xl font-black">Choose the companies you want to reach.</h2><p className="mt-2 max-w-2xl text-muted-foreground">Start with a profile of newly incorporated companies, then customise the audience and letter in Agency Mode.</p></div>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {SECTOR_LANDING_PAGES.map((sector) => <Card key={sector.slug} className="flex flex-col"><CardHeader className="p-4"><CardTitle className="text-lg">{sector.sector}</CardTitle><CardDescription className="text-sm leading-5">{sector.description}</CardDescription></CardHeader><CardContent className="mt-auto p-4 pt-0"><Link className="inline-flex items-center gap-2 text-sm font-black underline-offset-4 hover:underline" href={`/${sector.slug}`}>Open radar <ArrowRight className="size-4" /></Link></CardContent></Card>)}
+            {SECTOR_LANDING_PAGES.map((sector) => <Card key={sector.slug} className="flex flex-col"><CardHeader className="p-4"><CardTitle className="text-lg">{sector.title}</CardTitle><CardDescription className="text-sm leading-5">{sector.description}</CardDescription></CardHeader><CardContent className="mt-auto p-4 pt-0"><Link className="inline-flex items-center gap-2 text-sm font-black underline-offset-4 hover:underline" href={`/${sector.slug}`}>See matching companies <ArrowRight className="size-4" /></Link></CardContent></Card>)}
           </div>
         </section>
 
