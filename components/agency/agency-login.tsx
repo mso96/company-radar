@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
+import { useAuth } from "@clerk/nextjs"
 import { useSignIn, useSignUp } from "@clerk/nextjs/legacy"
 import { ArrowLeft, ArrowRight, Check, Mail, Radar } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -45,6 +46,7 @@ function AuthField({ label, type = "text", value, onChange, placeholder, autoCom
 }
 
 function CustomClerkAuth({ mode, onModeChange }: { mode: AuthMode; onModeChange: (mode: AuthMode) => void }) {
+  const { isLoaded: authLoaded, isSignedIn } = useAuth()
   const { isLoaded: signInLoaded, signIn, setActive: setSignInActive } = useSignIn()
   const { isLoaded: signUpLoaded, signUp, setActive: setSignUpActive } = useSignUp()
   const [step, setStep] = React.useState<AuthStep>("identifier")
@@ -56,6 +58,10 @@ function CustomClerkAuth({ mode, onModeChange }: { mode: AuthMode; onModeChange:
 
   const loaded = mode === "sign-in" ? signInLoaded && Boolean(signIn) : signUpLoaded && Boolean(signUp)
   const activeSet = mode === "sign-in" ? setSignInActive : setSignUpActive
+
+  React.useEffect(() => {
+    if (authLoaded && isSignedIn) window.location.replace("/app")
+  }, [authLoaded, isSignedIn])
 
   function switchMode(nextMode: AuthMode) {
     setError("")
@@ -130,6 +136,10 @@ function CustomClerkAuth({ mode, onModeChange }: { mode: AuthMode; onModeChange:
     setBusy(true)
     setError("")
     try {
+      if (isSignedIn) {
+        window.location.assign("/app")
+        return
+      }
       const resource = mode === "sign-in" ? signIn : signUp
       if (!resource) throw new Error("Authentication is still loading. Please try again.")
       await resource.authenticateWithRedirect({
