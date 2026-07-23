@@ -67,8 +67,8 @@ export default function AgencyMarketingPage() {
             </p>
           </div>
           <Card className="overflow-hidden">
-            <CardContent className="grid gap-6 p-4 sm:p-6 lg:grid-cols-[minmax(0,0.85fr)_minmax(280px,1.15fr)] lg:p-8">
-              <div className="flex flex-col justify-center gap-4">
+            <CardContent className="flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
+              <div className="order-last flex w-full flex-col justify-center gap-4 border-t-2 pt-6 lg:flex-row lg:items-center lg:justify-between lg:gap-8">
                 <div className="flex flex-wrap gap-2">
                   <Badge className="w-fit border-2" variant="outline">Digital agencies · New company introduction</Badge>
                   <Badge className="w-fit border-2 bg-[hsl(var(--chart-2))]" variant="outline">Letters from 99p</Badge>
@@ -86,7 +86,7 @@ export default function AgencyMarketingPage() {
                   <Link href="/agency-login">Create your letter <ArrowRight className="size-4" /></Link>
                 </Button>
               </div>
-              <article className="mx-auto w-full max-w-[520px] overflow-hidden border-2 bg-white text-black shadow-[5px_5px_0_0_hsl(var(--foreground))]" aria-label="Example direct mail letter">
+              <article className="order-first w-full overflow-hidden border-2 bg-white text-black shadow-[5px_5px_0_0_hsl(var(--foreground))]" aria-label="Example direct mail letter">
                 <div className="bg-black px-5 py-2 text-center text-[10px] font-black uppercase tracking-[0.18em] text-white sm:px-8">New company? Let&apos;s make your next step easier.</div>
                 <div className="p-5 sm:p-8">
                   <div className="flex items-start justify-between gap-4 border-b-4 border-[hsl(var(--chart-2))] pb-5">
