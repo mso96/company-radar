@@ -1,0 +1,15 @@
+"use client"
+
+import * as React from "react"
+import Link from "next/link"
+import { ArrowRight, Mail, Radar } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+
+export function AgencyLogin() {
+  const [email, setEmail] = React.useState(""); const [state, setState] = React.useState<"idle" | "sending" | "sent" | "error">("idle"); const [message, setMessage] = React.useState("")
+  async function submit(event: React.FormEvent) { event.preventDefault(); setState("sending"); try { const response = await fetch("/api/auth/request-link", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email }) }); const body = await response.json(); if (!response.ok) throw new Error(body.error); setState("sent"); setMessage("Check your inbox for a secure sign-in link.") } catch (error) { setState("error"); setMessage(error instanceof Error ? error.message : "Unable to send sign-in link.") } }
+  async function openDemo() { setState("sending"); try { const response = await fetch("/api/auth/demo", { method: "POST" }); if (!response.ok) throw new Error("Demo access is only available in local development."); location.assign("/app") } catch (error) { setState("error"); setMessage(error instanceof Error ? error.message : "Unable to open demo workspace.") } }
+  return <main className="min-h-screen bg-background px-4 py-8 text-foreground"><div className="mx-auto max-w-xl"><Link href="/" className="inline-flex items-center gap-2 text-sm font-bold underline-offset-4 hover:underline"><Radar className="size-4" /> UK Company Radar</Link><Card className="mt-8 border-2 shadow-[6px_6px_0_0_hsl(var(--foreground))]"><CardHeader><CardTitle className="text-3xl font-black">Agency Mode</CardTitle><CardDescription>Sign in with the email used for your paid Company Radar subscription.</CardDescription></CardHeader><CardContent><form className="space-y-4" onSubmit={submit}><label className="block space-y-2 text-sm font-semibold"><span>Email address</span><div className="relative"><Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input className="pl-10" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@agency.com" required /></div></label>{message ? <p className={state === "error" ? "text-sm text-red-700" : "text-sm text-emerald-700"}>{message}</p> : null}<Button disabled={state === "sending"} type="submit">{state === "sending" ? "Sending…" : "Email me a sign-in link"}<ArrowRight className="ml-2 size-4" /></Button></form>{process.env.NODE_ENV === "development" ? <div className="mt-6 border-t-2 pt-5"><p className="mb-3 text-sm text-muted-foreground">Local preview only — no email or database setup required. Real sign-in needs local D1 migrations and Resend settings.</p><Button disabled={state === "sending"} variant="outline" onClick={openDemo}>Open demo workspace <ArrowRight className="ml-2 size-4" /></Button></div> : null}</CardContent></Card></div></main>
+}

@@ -53,4 +53,55 @@
       system-ui,
       sans-serif;
   }
+
+  .a4-letter-preview {
+    color: hsl(var(--foreground));
+    font-size: 12px;
+    line-height: 1.55;
+  }
+
+  .a4-letter-preview .letter-copy {
+    max-width: 44rem;
+    font-size: 13px;
+    line-height: 1.65;
+  }
+
+  .a4-letter-preview .letter-copy p {
+    margin: 0 0 0.85rem;
+  }
+
+  .a4-letter-preview .letter-copy ul,
+  .a4-letter-preview .letter-copy ol {
+    margin: 0.35rem 0 1rem 1.25rem;
+    padding: 0;
+  }
+
+  .a4-letter-preview .letter-copy li {
+    margin: 0.2rem 0;
+  }
+
+  .a4-letter-preview .letter-subject {
+    max-width: 44rem;
+    font-size: 18px;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+  }
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
+  body {
+    background: white;
+  }
+
+  .a4-letter-preview {
+    width: 210mm;
+    min-height: 297mm;
+    margin: 0;
+    box-shadow: none;
+  }
 }

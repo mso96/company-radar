@@ -9,10 +9,10 @@ UK Company Radar is a modern business intelligence dashboard for analyzing newly
 - Company table with search, sorting, and pagination
 - Simple stats row for total companies, top city, top SIC, and hot sector
 - MVP insight cards for top industries, top regions, top cities, growth trends, company types, and keyword signals
-- Paid SIC alert signup flow with Stripe Checkout
-- Stripe webhook handling for paid subscriptions
-- Weekly email digest alert delivery through Resend
-- Cloudflare D1 schema for alert subscriptions and tracked SIC codes
+- Agency Mode workspace with SIC, location, keyword and event radars
+- Lead inbox, competitor/client watchlists, letter templates and mail queue
+- Stannp direct-mail test PDF and approval workflow with prepaid credits
+- Cloudflare D1 schema for Agency Mode and direct-mail records
 - Clean white MVP interface
 - Loading skeletons, error handling, empty states, and no-results states
 
@@ -46,17 +46,12 @@ COMPANIES_HOUSE_API_KEY=your_companies_house_api_key_here
 SITE_URL=https://companyradar.uk
 ```
 
-4. Add the paid alert environment variables when you are ready to enable subscriptions:
+4. Add Agency Mode runtime values when you are ready to use real sign-in and mail:
 
 ```bash
-STRIPE_SECRET_KEY=sk_live_or_test_here
-STRIPE_PUBLISHABLE_KEY=pk_live_or_test_here
-STRIPE_WEBHOOK_SECRET=whsec_here
-STRIPE_PRICE_ID=price_here
 RESEND_API_KEY=re_here
 ALERT_FROM_EMAIL=alerts@yourdomain.com
-TELEGRAM_BOT_TOKEN=bot_token_here
-TELEGRAM_CHAT_ID=chat_id_here
+STANNP_API_KEY=stannp_api_key_here
 ```
 
 5. Start the development server:
@@ -65,7 +60,9 @@ TELEGRAM_CHAT_ID=chat_id_here
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+The dev script keeps Wrangler's local registry and logs inside the project, so it does not need to write to the macOS global preferences directory.
+
+Open [http://localhost:3000](http://localhost:3000). In local development, use `/agency-login` and choose **Open demo workspace**; this does not require D1, Resend or Stannp credentials.
 
 ## API Security
 
@@ -73,27 +70,25 @@ All Companies House requests run through `app/api/companies/route.ts`. The API k
 
 The browser never receives the API key.
 
-## Paid SIC Alerts
+## Agency Mode and direct mail
 
-The paid alert flow is intentionally no-login for v1:
+Agency Mode is available at `/agency-login`. The local demo gives access to a sample workspace without any external credentials. Real workspaces require the D1 binding, Resend magic-link settings and a Companies House API key. Physical mail is always held in an owner approval queue and requires prepaid credits.
 
-1. User enters an email address
-2. User selects up to 3 SIC codes
-3. User pays through Stripe Checkout
-4. Stripe webhook stores the active subscription in D1
-5. A weekly Cloudflare cron job stores a private alert run snapshot and sends the digest email
-6. The email links to a private results page for that week
+### Local D1 setup
 
-Stripe checkout is implemented with the managed payments preview flow. If `STRIPE_PRICE_ID` is not set, the app will create a managed monthly product and default price in Stripe the first time checkout runs, then persist those ids in D1.
+The existing Cloudflare binding is named `ALERTS_DB`. To test a real local workspace, apply all migrations locally and create a `.dev.vars` file (never commit it):
 
-### Routes
+```bash
+npx wrangler d1 migrations apply company-radar-alerts --local
+```
 
-- `POST /api/alerts/checkout`
-- `POST /api/stripe/webhook`
-- `GET /alerts/success`
-- `GET /alerts/results/[token]`
+Add `ALERTS_DB` through the binding in `wrangler.jsonc`, then restart the dev server. If the binding is missing, `/app` safely redirects to `/agency-login` instead of showing an Internal Server Error.
 
-### D1 migration
+### Direct-mail provider
+
+Stannp is the v1 provider. `STANNP_API_KEY` is read only server-side. Test PDF generation uses Stannp test mode; production mail requires a completed sender profile, a verified registered-office address, suppression checks, sufficient credits and explicit batch approval.
+
+### Production D1 migration
 
 Create a D1 database, then apply the migration:
 
@@ -102,35 +97,13 @@ npx wrangler d1 create company-radar-alerts
 npx wrangler d1 migrations apply company-radar-alerts
 ```
 
-Then add the returned D1 binding details into `wrangler.jsonc`.
-Also apply new migrations when alert run storage changes are added.
-
-### Stripe setup
-
-- Create a recurring price in Stripe for `£4.99/month`, or leave `STRIPE_PRICE_ID` empty and let the app create the managed product/price during the first checkout
-- Point your Stripe webhook endpoint to:
-
-```text
-https://your-domain.com/api/stripe/webhook
-```
-
-- Subscribe the endpoint to:
-  - `checkout.session.completed`
-  - `customer.subscription.updated`
-  - `customer.subscription.deleted`
+Then add the returned D1 binding details into `wrangler.jsonc`. Historical alert tables and Stripe webhook code remain for compatibility, but they are no longer part of the user-facing product.
 
 ### Resend setup
 
 - Verify a sending domain in Resend
 - Set `ALERT_FROM_EMAIL` to an address on that domain
 - Add `RESEND_API_KEY`
-
-### Telegram notifications
-
-- Create a Telegram bot with BotFather
-- Add your bot token as `TELEGRAM_BOT_TOKEN`
-- Add your personal or group chat id as `TELEGRAM_CHAT_ID`
-- When a paid subscription completes, the Stripe webhook will send you a Telegram notification
 
 ## Demo Mode
 
@@ -157,19 +130,17 @@ npm run deploy
 
 Add `COMPANIES_HOUSE_API_KEY` in Cloudflare as a secret or environment variable. Do not prefix it with `NEXT_PUBLIC_`.
 
-For paid SIC alerts, also add:
+For Agency Mode, also add:
 
 - `SITE_URL`
-- `STRIPE_SECRET_KEY`
-- `STRIPE_PUBLISHABLE_KEY`
-- `STRIPE_WEBHOOK_SECRET`
-- `STRIPE_PRICE_ID`
 - `RESEND_API_KEY`
 - `ALERT_FROM_EMAIL`
+- `COMPANIES_HOUSE_API_KEY`
+- `STANNP_API_KEY`
 
 Set it in both Cloudflare places if the dashboard shows both:
 
 - Build variables and secrets
 - Runtime variables and secrets
 
-When you are ready to enable recurring digests, add the D1 binding and cron trigger in `wrangler.jsonc`, then redeploy.
+The daily Agency scan and Stannp status sync use the cron triggers in `wrangler.jsonc`; redeploy after changing the binding or runtime secrets.

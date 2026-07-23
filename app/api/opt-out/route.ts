@@ -1,0 +1,5 @@
+import { NextResponse } from "next/server"
+import { getAgencyRuntimeEnv, requireAgencyDatabase } from "@/lib/agency/runtime"
+import { getMailItemByReference, suppressCompany } from "@/lib/agency/mail"
+
+export async function POST(request: Request) { try { const { reference, companyNumber } = await request.json() as { reference?: string; companyNumber?: string }; if (!reference || !companyNumber) throw new Error("Enter the reference and company number from the letter."); const db = requireAgencyDatabase(await getAgencyRuntimeEnv()); const item = await getMailItemByReference(db, reference.trim().toUpperCase()); if (!item || item.company_number.toUpperCase() !== companyNumber.trim().toUpperCase()) throw new Error("We could not match this letter reference."); await suppressCompany(db, item.workspace_id, item.company_number, "Public opt-out"); return NextResponse.json({ ok: true }) } catch (error) { return NextResponse.json({ error: error instanceof Error ? error.message : "Unable to process opt-out." }, { status: 400 }) } }

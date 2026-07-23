@@ -62,7 +62,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { AlertsSignupSection } from "@/components/dashboard/alerts-signup-section"
+import { MarketingHeader } from "@/components/marketing/marketing-header"
 import { SIC_LABELS } from "@/lib/sic-codes"
 import type { CompaniesResponse, CompanyRecord, DateRangeKey } from "@/lib/types"
 
@@ -153,6 +153,7 @@ export function Dashboard() {
   return (
     <main className="min-h-screen bg-background text-foreground">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-7 sm:px-6 lg:px-8">
+        <MarketingHeader />
         <header className="font-neo-grotesque overflow-hidden rounded-md border-2 bg-card shadow-[6px_6px_0_0_hsl(var(--foreground))]">
           <div className="flex flex-col gap-8 px-5 py-7 sm:px-8 lg:flex-row lg:items-end lg:justify-between lg:px-10 lg:py-10">
             <div className="flex max-w-3xl flex-col gap-5">
@@ -268,7 +269,6 @@ export function Dashboard() {
               }
             />
 
-            <AlertsSignupSection />
           </>
         )}
 
