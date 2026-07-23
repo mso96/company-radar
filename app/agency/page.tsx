@@ -72,7 +72,7 @@ export default function AgencyMarketingPage() {
           <Card className="overflow-hidden">
             <CardContent className="flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
               <div className="order-last flex w-full justify-center border-t-2 pt-6">
-                <Button asChild className="w-full sm:w-auto" size="lg">
+                <Button asChild className="w-full bg-[hsl(var(--chart-5))] text-white hover:bg-[hsl(var(--chart-5))]/90 sm:w-auto" size="lg">
                   <Link href="/agency-login">Reach new companies the day after incorporation <ArrowRight className="size-4" /></Link>
                 </Button>
               </div>
@@ -108,7 +108,7 @@ export default function AgencyMarketingPage() {
                     </ul>
                     <p>If it would be useful, we&apos;d love to have a friendly 15-minute chat and share a few ideas for Signal Forge AI Ltd. No hard sell, just useful next steps.</p>
                   </div>
-                  <div className="mt-6 grid gap-4 border-2 border-black bg-[hsl(var(--chart-5))] p-4 text-white sm:grid-cols-[1fr_auto] sm:items-center">
+                  <div className="mt-6 grid gap-4 border-2 border-black bg-[hsl(var(--chart-2))] p-4 sm:grid-cols-[1fr_auto] sm:items-center">
                     <div>
                       <p className="text-sm font-black">Book a friendly 15-minute chat</p>
                       <p className="mt-1 text-xs font-semibold">Scan to choose a time: northstardigital.co.uk/start</p>
