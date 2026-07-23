@@ -115,21 +115,40 @@ export default function AgencyMarketingPage() {
                     </div>
                     <img className="size-24 border-2 border-black bg-white p-1" src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&margin=8&data=https%3A%2F%2Fnorthstardigital.co.uk%2Fstart" alt="QR code for the Northstar Digital booking page" loading="lazy" />
                   </div>
-                  <div className="mt-4 border-2 border-black bg-black px-4 py-3 text-center text-sm font-black text-white">New company offer: 50% off your first project</div>
+                  <div className="mt-4 grid gap-3 border-2 border-black bg-black p-4 text-white sm:grid-cols-[1fr_auto] sm:items-center">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[hsl(var(--chart-2))]">New company launch offer</p>
+                      <p className="mt-1 text-lg font-black">50% off your first project</p>
+                    </div>
+                    <span className="border-2 border-[hsl(var(--chart-2))] px-3 py-2 text-center text-xs font-black text-[hsl(var(--chart-2))]">Mention this letter</span>
+                  </div>
                   <div className="mt-7 border-t-2 pt-5">
                     <p className="font-black">All the best,</p>
                     <p className="mt-1 font-semibold">Alex Morgan · Northstar Digital</p>
                     <p className="mt-4 text-xs leading-5 text-black/70">northstardigital.co.uk · hello@northstardigital.co.uk · 020 7946 0958</p>
                     <p className="mt-2 text-[10px] leading-4 text-black/50">To opt out of future post, use reference NS-EXAMPLE-2048.</p>
                   </div>
-                  <div className="mt-7 grid gap-3 border-t-2 pt-5 sm:grid-cols-2">
-                    <div className="border-2 border-black p-3">
-                      <p className="text-xs font-black uppercase tracking-wide">Built for day one</p>
-                      <p className="mt-2 text-xs leading-5 text-black/70">A practical partner for your first website, first campaign and first customers.</p>
+                  <div className="mt-7 border-t-2 pt-5">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                      <div>
+                        <p className="text-xs font-black uppercase tracking-[0.14em]">Meet your launch team</p>
+                        <p className="mt-1 text-xs leading-5 text-black/70">Small team, practical advice, no hard sell.</p>
+                      </div>
+                      <span className="text-[10px] font-black uppercase tracking-wide text-black/50">Northstar Digital</span>
                     </div>
-                    <div className="border-2 border-black p-3">
-                      <p className="text-xs font-black uppercase tracking-wide">Your new company offer</p>
-                      <p className="mt-2 text-xs leading-5 text-black/70">Mention this letter when you book and we&apos;ll apply your 50% launch discount.</p>
+                    <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                      <div className="flex items-center gap-2 border-2 border-black p-2">
+                        <span className="flex size-9 shrink-0 items-center justify-center rounded-full border-2 border-black bg-[hsl(var(--chart-2))] text-[10px] font-black">AM</span>
+                        <span><strong className="block text-xs">Alex Morgan</strong><small className="text-[10px] text-black/60">Strategy</small></span>
+                      </div>
+                      <div className="flex items-center gap-2 border-2 border-black p-2">
+                        <span className="flex size-9 shrink-0 items-center justify-center rounded-full border-2 border-black bg-[hsl(var(--chart-5))] text-[10px] font-black text-white">MP</span>
+                        <span><strong className="block text-xs">Maya Patel</strong><small className="text-[10px] text-black/60">Brand &amp; web</small></span>
+                      </div>
+                      <div className="flex items-center gap-2 border-2 border-black p-2">
+                        <span className="flex size-9 shrink-0 items-center justify-center rounded-full border-2 border-black bg-[hsl(var(--chart-3))] text-[10px] font-black">SR</span>
+                        <span><strong className="block text-xs">Sam Reed</strong><small className="text-[10px] text-black/60">Growth</small></span>
+                      </div>
                     </div>
                   </div>
                 </div>
