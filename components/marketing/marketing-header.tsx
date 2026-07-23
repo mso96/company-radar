@@ -15,6 +15,9 @@ export function MarketingHeader() {
         <Button asChild className="border-2 bg-[hsl(var(--chart-2))] px-3 py-2 text-xs font-black text-foreground shadow-[3px_3px_0_0_hsl(var(--foreground))] hover:bg-[hsl(var(--chart-2))]/90">
           <Link href="/agency">Agency Mode <span aria-hidden="true">→</span></Link>
         </Button>
+        <Button asChild variant="outline" className="border-2 px-3 py-2 text-xs font-black shadow-[3px_3px_0_0_hsl(var(--foreground))]">
+          <Link href="/agency-login">Get started for free <span aria-hidden="true">→</span></Link>
+        </Button>
         <Link className="px-2 underline-offset-4 hover:underline" href="/pricing">Pricing</Link>
         <Link className="px-2 underline-offset-4 hover:underline" href="/contact">Contact Us</Link>
       </nav>
