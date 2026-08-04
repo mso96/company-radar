@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowRight, Calculator, Check, Gift, Mail, Megaphone, Scale, Search } from "lucide-react"
+import { ArrowRight, Calculator, Check, Gift, Mail, Megaphone, MessageSquareText, Palette, QrCode, Scale, Search } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -27,12 +27,10 @@ const targetProfiles = [
   { title: "New property businesses", description: "Property, estate and development companies making their first commercial moves.", href: "/new-property-companies" },
 ]
 
-const customisableLetterFields = [
-  "Logo, agency name and brand colours",
-  "Opening message and services",
-  "Offer and call to action",
-  "QR code destination",
-  "Signature and contact details",
+const letterAnatomy = [
+  { number: "01", title: "Brand", description: "Logo, business name and colours", icon: Palette, accent: "bg-[hsl(var(--chart-2))]" },
+  { number: "02", title: "Message", description: "Opening, services and offer", icon: MessageSquareText, accent: "bg-[hsl(var(--chart-3))]" },
+  { number: "03", title: "Response", description: "CTA, QR destination and signature", icon: QrCode, accent: "bg-[hsl(var(--chart-4))]" },
 ]
 
 export default function AgencyMarketingPage() {
@@ -88,25 +86,30 @@ export default function AgencyMarketingPage() {
           <Card className="overflow-hidden">
             <CardContent className="p-0">
               <div className="grid lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
-                <aside className="order-1 flex flex-col justify-center border-b-2 bg-foreground p-5 text-background sm:p-8 lg:order-2 lg:border-b-0 lg:border-l-2" aria-label="Customisable letter fields">
-                  <p className="text-xs font-black uppercase tracking-[0.16em] text-[hsl(var(--chart-2))]">Everything you see can change</p>
-                  <h3 className="mt-3 text-3xl font-black leading-tight">Your letter, your brand.</h3>
-                  <p className="mt-4 text-sm leading-6 text-background/80">
-                    Use this as a starting point. Replace every part with your own branding, message and offer before anything is printed.
+                <aside className="order-1 flex flex-col justify-center border-b-2 bg-card p-5 sm:p-8 lg:order-2 lg:border-b-0 lg:border-l-2" aria-label="Anatomy of your customisable letter">
+                  <Badge className="w-fit border-2 bg-[hsl(var(--chart-3))]" variant="outline">Fully customisable</Badge>
+                  <p className="mt-5 text-xs font-black uppercase tracking-[0.16em] text-muted-foreground">Anatomy of your letter</p>
+                  <h3 className="mt-2 text-3xl font-black leading-tight">Make every part yours.</h3>
+                  <p className="mt-3 max-w-md text-sm leading-6 text-muted-foreground">
+                    Start with this proven structure, then shape the brand, message and response around your business.
                   </p>
-                  <ul className="mt-6 space-y-2" aria-label="Customisable parts of the letter">
-                    {customisableLetterFields.map((field) => (
-                      <li key={field} className="flex items-center gap-3 border-2 border-background/25 bg-background/5 p-3 text-sm font-bold">
-                        <span className="flex size-6 shrink-0 items-center justify-center bg-[hsl(var(--chart-2))] text-foreground" aria-hidden="true"><Check className="size-4" /></span>
-                        {field}
+                  <ol className="mt-6 border-y-2" aria-label="Customisable layers of the letter">
+                    {letterAnatomy.map(({ number, title, description, icon: Icon, accent }) => (
+                      <li key={number} className="grid grid-cols-[auto_1fr_auto] items-center gap-3 border-t-2 py-4 first:border-t-0">
+                        <span className={`flex size-10 shrink-0 items-center justify-center font-black ${accent}`} aria-hidden="true">{number}</span>
+                        <div>
+                          <p className="font-black">{title}</p>
+                          <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>
+                        </div>
+                        <Icon className="size-5 text-muted-foreground" aria-hidden="true" />
                       </li>
                     ))}
-                  </ul>
-                  <div className="mt-6 border-2 border-[hsl(var(--chart-2))] p-4">
-                    <p className="flex items-start gap-2 text-sm font-black"><Check className="mt-0.5 size-4 shrink-0 text-[hsl(var(--chart-2))]" /> Nothing is printed or posted until you approve it.</p>
+                  </ol>
+                  <div className="mt-5 bg-muted p-3">
+                    <p className="flex items-start gap-2 text-sm font-bold"><span className="flex size-5 shrink-0 items-center justify-center bg-[hsl(var(--chart-2))]" aria-hidden="true"><Check className="size-3.5" /></span> Nothing is printed or posted until you approve it.</p>
                   </div>
-                  <Button asChild className="mt-6 w-full bg-[hsl(var(--chart-2))] text-foreground hover:bg-[hsl(var(--chart-2))]/90" size="lg">
-                    <Link href="/agency-login">Customise your first letter <ArrowRight className="size-4" /></Link>
+                  <Button asChild className="mt-5 w-fit" size="lg">
+                    <Link href="/agency-login">Customise your letter <ArrowRight className="size-4" /></Link>
                   </Button>
                 </aside>
                 <figure className="order-2 bg-muted p-4 sm:p-6 lg:order-1 lg:p-8">
