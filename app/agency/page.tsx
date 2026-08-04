@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
+import Image from "next/image"
 import Link from "next/link"
-import { ArrowRight, Building2, Check, Dumbbell, Mail, Search, ShoppingBag, Utensils } from "lucide-react"
+import { ArrowRight, Calculator, Check, Gift, Mail, Megaphone, Scale, Search } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -13,10 +14,10 @@ export const metadata: Metadata = {
 }
 
 const audiences = [
-  { name: "Ecommerce businesses", description: "Reach new online retailers before their first store, campaign or fulfilment decision.", href: "/new-ecommerce-companies", action: "Find ecommerce companies", icon: ShoppingBag },
-  { name: "Gyms & fitness studios", description: "Meet new gyms early with offers for memberships, local growth and launch marketing.", href: "/agency-login", action: "Build a fitness campaign", icon: Dumbbell },
-  { name: "Restaurants & hospitality", description: "Find new venues before opening night with a focused local outreach campaign.", href: "/agency-login", action: "Build a hospitality campaign", icon: Utensils },
-  { name: "Property businesses", description: "Reach new property, estate and development companies while plans are still taking shape.", href: "/new-property-companies", action: "Find property companies", icon: Building2 },
+  { name: "Solicitors & legal firms", description: "Reach founders early with company, contract, trademark and employment legal support.", href: "/agency-login", action: "Build a legal campaign", icon: Scale },
+  { name: "Marketing & digital agencies", description: "Introduce branding, websites, SEO and launch campaigns while a new business is choosing partners.", href: "/agency-login", action: "Build an agency campaign", icon: Megaphone },
+  { name: "Accountants & bookkeepers", description: "Offer tax, payroll, bookkeeping and financial setup when a new company needs them most.", href: "/agency-login", action: "Build an accounting campaign", icon: Calculator },
+  { name: "Print & promotional suppliers", description: "Reach new businesses looking for signage, uniforms, merchandise, stationery and launch materials.", href: "/agency-login", action: "Build a supplier campaign", icon: Gift },
 ]
 
 const targetProfiles = [
@@ -24,6 +25,14 @@ const targetProfiles = [
   { title: "New gyms & fitness studios", description: "Fitness businesses looking for memberships, local visibility and a strong launch.", href: "/agency-login" },
   { title: "New restaurants & hospitality", description: "New venues and hospitality teams building awareness before their opening day.", href: "/agency-login" },
   { title: "New property businesses", description: "Property, estate and development companies making their first commercial moves.", href: "/new-property-companies" },
+]
+
+const customisableLetterFields = [
+  "Logo, agency name and brand colours",
+  "Opening message and services",
+  "Offer and call to action",
+  "QR code destination",
+  "Signature and contact details",
 ]
 
 export default function AgencyMarketingPage() {
@@ -58,7 +67,7 @@ export default function AgencyMarketingPage() {
         </section>
 
         <section id="for-who" className="order-3 scroll-mt-6">
-          <div className="mb-4"><p className="text-sm font-bold uppercase tracking-wide text-muted-foreground">For who</p><h2 className="mt-1 text-3xl font-black">Built for teams selling into new businesses.</h2><p className="mt-2 max-w-2xl text-muted-foreground">Start with the audience closest to your offer. You can change the filters and letter before activating a radar.</p></div>
+          <div className="mb-4"><p className="text-sm font-bold uppercase tracking-wide text-muted-foreground">For who</p><h2 className="mt-1 text-3xl font-black">For anyone who wants to win newly formed companies as clients.</h2><p className="mt-2 max-w-2xl text-muted-foreground">If new businesses need your service, Agency Mode helps you find the right ones and reach them with a relevant letter at the right moment.</p></div>
           <div className="grid gap-4 md:grid-cols-2">
             {audiences.map(({ name, description, href, action, icon: Icon }) => <Card key={name}><CardHeader><div className="mb-2 flex size-10 items-center justify-center border-2 bg-[hsl(var(--chart-3))]"><Icon className="size-5" /></div><CardTitle>{name}</CardTitle><CardDescription>{description}</CardDescription></CardHeader><CardContent><Button asChild variant="outline"><Link href={href}>{action} <ArrowRight className="size-4" /></Link></Button></CardContent></Card>)}
           </div>
@@ -69,96 +78,51 @@ export default function AgencyMarketingPage() {
             <div className="flex flex-wrap items-center gap-2">
               <p className="text-sm font-bold uppercase tracking-wide text-muted-foreground">Physical letter preview</p>
               <Badge className="border-2 bg-[hsl(var(--chart-2))]" variant="outline">Printed &amp; posted</Badge>
+              <Badge className="border-2 bg-[hsl(var(--chart-3))]" variant="outline">Fully customisable</Badge>
             </div>
-            <h2 id="example-letter-heading" className="mt-1 text-3xl font-black">A letter your new-company campaign can send.</h2>
+            <h2 id="example-letter-heading" className="mt-1 text-3xl font-black">Start with a proven letter. Make every part yours.</h2>
             <p className="mt-2 max-w-2xl text-muted-foreground">
-              Start with a ready-made message, then make it yours with your services, branding and call to action before you approve a batch.
+              See how a complete branded letter can look, then replace the message, design and offer with your own before you approve a batch.
             </p>
           </div>
           <Card className="overflow-hidden">
-            <CardContent className="flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
-              <div className="order-last flex w-full justify-center border-t-2 pt-6">
-                <Button asChild className="w-full bg-[hsl(var(--chart-5))] text-white hover:bg-[hsl(var(--chart-5))]/90 sm:w-auto" size="lg">
-                  <Link href="/agency-login">Reach new companies the day after incorporation <ArrowRight className="size-4" /></Link>
-                </Button>
+            <CardContent className="p-0">
+              <div className="grid lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
+                <aside className="order-1 flex flex-col justify-center border-b-2 bg-foreground p-5 text-background sm:p-8 lg:order-2 lg:border-b-0 lg:border-l-2" aria-label="Customisable letter fields">
+                  <p className="text-xs font-black uppercase tracking-[0.16em] text-[hsl(var(--chart-2))]">Everything you see can change</p>
+                  <h3 className="mt-3 text-3xl font-black leading-tight">Your letter, your brand.</h3>
+                  <p className="mt-4 text-sm leading-6 text-background/80">
+                    Use this as a starting point. Replace every part with your own branding, message and offer before anything is printed.
+                  </p>
+                  <ul className="mt-6 space-y-2" aria-label="Customisable parts of the letter">
+                    {customisableLetterFields.map((field) => (
+                      <li key={field} className="flex items-center gap-3 border-2 border-background/25 bg-background/5 p-3 text-sm font-bold">
+                        <span className="flex size-6 shrink-0 items-center justify-center bg-[hsl(var(--chart-2))] text-foreground" aria-hidden="true"><Check className="size-4" /></span>
+                        {field}
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="mt-6 border-2 border-[hsl(var(--chart-2))] p-4">
+                    <p className="flex items-start gap-2 text-sm font-black"><Check className="mt-0.5 size-4 shrink-0 text-[hsl(var(--chart-2))]" /> Nothing is printed or posted until you approve it.</p>
+                  </div>
+                  <Button asChild className="mt-6 w-full bg-[hsl(var(--chart-2))] text-foreground hover:bg-[hsl(var(--chart-2))]/90" size="lg">
+                    <Link href="/agency-login">Customise your first letter <ArrowRight className="size-4" /></Link>
+                  </Button>
+                </aside>
+                <figure className="order-2 bg-muted p-4 sm:p-6 lg:order-1 lg:p-8">
+                  <div className="mx-auto aspect-[707/1000] w-full max-w-[640px] overflow-hidden border-2 bg-white shadow-[5px_5px_0_0_hsl(var(--foreground))]">
+                    <Image
+                      className="h-full w-full object-contain"
+                      src="/northstar-customisable-letter.png"
+                      alt="Example customisable Northstar Digital A4 letter with branded colours, personalised copy, offer, QR code and signature"
+                      width={1414}
+                      height={2000}
+                      sizes="(min-width: 1024px) 55vw, 100vw"
+                    />
+                  </div>
+                  <figcaption className="mt-4 text-center text-xs font-semibold text-muted-foreground">Example campaign preview · Your final letter uses your own brand and message.</figcaption>
+                </figure>
               </div>
-              <article className="order-first mx-auto aspect-[210/297] w-full max-w-[820px] overflow-hidden border-2 bg-white text-black shadow-[5px_5px_0_0_hsl(var(--foreground))]" aria-label="Example A4 direct mail letter">
-                <div className="bg-black px-5 py-2 text-center text-[10px] font-black uppercase tracking-[0.18em] text-white sm:px-8">New company? Let&apos;s make your next step easier.</div>
-                <div className="p-5 sm:p-8">
-                  <div className="flex items-start justify-between gap-4 border-b-4 border-[hsl(var(--chart-2))] pb-5">
-                    <div className="flex items-center gap-3">
-                      <div className="relative flex size-12 items-center justify-center border-2 bg-[hsl(var(--chart-2))] shadow-[3px_3px_0_0_black]" aria-label="Northstar Digital logo">
-                        <svg className="size-9" viewBox="0 0 48 48" role="img" aria-hidden="true">
-                          <circle cx="24" cy="24" r="18" fill="none" stroke="currentColor" strokeWidth="2.5" />
-                          <path d="M24 5 28 20 43 24 28 28 24 43 20 28 5 24 20 20Z" fill="currentColor" />
-                          <path d="m24 10 2.2 11.8L38 24l-11.8 2.2L24 38l-2.2-11.8L10 24l11.8-2.2Z" fill="hsl(var(--chart-2))" />
-                          <circle cx="24" cy="24" r="3" fill="currentColor" />
-                        </svg>
-                      </div>
-                      <div>
-                        <p className="text-lg font-black uppercase tracking-tight">Northstar Digital</p>
-                        <p className="mt-1 text-xs font-semibold text-black/60">Make your next move matter.</p>
-                      </div>
-                    </div>
-                    <span className="border-2 border-black px-2 py-1 text-[10px] font-black uppercase tracking-wide">A warm hello</span>
-                  </div>
-                  <div className="mt-7 space-y-4 text-sm leading-6 sm:text-base">
-                    <p>Hello <strong>Harbour Business Support Ltd</strong>,</p>
-                    <p>First of all, a huge congratulations on starting your new company. It&apos;s an exciting step, and we know there is a lot to get moving at once.</p>
-                    <p>We help new businesses get a confident first impression and a practical plan for finding customers:</p>
-                    <ul className="list-disc space-y-1 pl-5 font-semibold">
-                      <li>Website launch and conversion-ready pages</li>
-                      <li>Branding that feels like you</li>
-                      <li>SEO to help the right people find you</li>
-                      <li>Paid media when you are ready to grow</li>
-                    </ul>
-                    <p>If it would be useful, we&apos;d love to have a friendly 15-minute chat and share a few ideas for Harbour Business Support Ltd. No hard sell, just useful next steps.</p>
-                  </div>
-                  <div className="mt-6 grid gap-4 border-2 border-black bg-[hsl(var(--chart-2))] p-4 sm:grid-cols-[1fr_auto] sm:items-center">
-                    <div>
-                      <p className="text-sm font-black">Book a friendly 15-minute chat</p>
-                      <p className="mt-1 text-xs font-semibold">Scan to choose a time: northstardigital.co.uk/start</p>
-                    </div>
-                    <img className="size-24 border-2 border-black bg-white p-1" src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&margin=8&data=https%3A%2F%2Fnorthstardigital.co.uk%2Fstart" alt="QR code for the Northstar Digital booking page" loading="lazy" />
-                  </div>
-                  <div className="mt-4 grid gap-3 border-2 border-black bg-black p-4 text-white sm:grid-cols-[1fr_auto] sm:items-center">
-                    <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[hsl(var(--chart-2))]">New company launch offer</p>
-                      <p className="mt-1 text-lg font-black">50% off your first project</p>
-                    </div>
-                    <span className="border-2 border-[hsl(var(--chart-2))] px-3 py-2 text-center text-xs font-black text-[hsl(var(--chart-2))]">Mention this letter</span>
-                  </div>
-                  <div className="mt-7 border-t-2 pt-5">
-                    <p className="font-black">All the best,</p>
-                    <p className="mt-1 font-semibold">Alex Morgan · Northstar Digital</p>
-                    <p className="mt-4 text-xs leading-5 text-black/70">northstardigital.co.uk · hello@northstardigital.co.uk · 020 7946 0958</p>
-                    <p className="mt-2 text-[10px] leading-4 text-black/50">To opt out of future post, use reference NS-EXAMPLE-2048.</p>
-                  </div>
-                  <div className="mt-7 border-t-2 pt-5">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                      <div>
-                        <p className="text-xs font-black uppercase tracking-[0.14em]">Meet your launch team</p>
-                        <p className="mt-1 text-xs leading-5 text-black/70">Small team, practical advice, no hard sell.</p>
-                      </div>
-                      <span className="text-[10px] font-black uppercase tracking-wide text-black/50">Northstar Digital</span>
-                    </div>
-                    <div className="mt-4 grid gap-2 sm:grid-cols-3">
-                      <div className="flex items-center gap-2 border-2 border-black p-2">
-                        <span className="flex size-9 shrink-0 items-center justify-center rounded-full border-2 border-black bg-[hsl(var(--chart-2))] text-[10px] font-black">AM</span>
-                        <span><strong className="block text-xs">Alex Morgan</strong><small className="text-[10px] text-black/60">Strategy</small></span>
-                      </div>
-                      <div className="flex items-center gap-2 border-2 border-black p-2">
-                        <span className="flex size-9 shrink-0 items-center justify-center rounded-full border-2 border-black bg-[hsl(var(--chart-5))] text-[10px] font-black text-white">MP</span>
-                        <span><strong className="block text-xs">Maya Patel</strong><small className="text-[10px] text-black/60">Brand &amp; web</small></span>
-                      </div>
-                      <div className="flex items-center gap-2 border-2 border-black p-2">
-                        <span className="flex size-9 shrink-0 items-center justify-center rounded-full border-2 border-black bg-[hsl(var(--chart-3))] text-[10px] font-black">SR</span>
-                        <span><strong className="block text-xs">Sam Reed</strong><small className="text-[10px] text-black/60">Growth</small></span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </article>
             </CardContent>
           </Card>
         </section>
