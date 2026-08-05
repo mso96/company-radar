@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Image from "next/image"
 import Link from "next/link"
 import { useAuth } from "@clerk/nextjs"
 import { useSignIn, useSignUp } from "@clerk/nextjs/legacy"
@@ -207,5 +208,48 @@ export function AgencyLogin() {
     } catch (error) { setState("error"); setMessage(error instanceof Error ? error.message : "Unable to open demo workspace.") }
   }
 
-  return <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-10 text-slate-900 sm:py-14"><div className="w-full max-w-[460px]"><Link href="/" className="mx-auto mb-7 inline-flex w-full items-center justify-center gap-2 text-sm font-semibold tracking-tight text-slate-700 transition hover:text-slate-950"><span className="flex size-8 items-center justify-center rounded-xl bg-slate-900 text-white shadow-sm"><Radar className="size-4" /></span> UK Company Radar</Link><section className="rounded-2xl border border-slate-200 bg-white px-6 py-7 shadow-xl shadow-slate-900/5 sm:px-9 sm:py-9"><div className="mb-7 text-center"><p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Agency Mode</p><h1 className="text-3xl font-bold tracking-tight text-slate-950">Start your free workspace</h1><p className="mx-auto mt-3 max-w-sm text-sm leading-6 text-slate-500">Find new companies, prepare branded letters, and approve every send.</p></div>{clerkEnabled ? <CustomClerkAuth mode={mode} onModeChange={setMode} /> : <><div className="mb-6 grid grid-cols-2 rounded-xl bg-slate-100 p-1"><button type="button" onClick={() => setMode("sign-in")} className={mode === "sign-in" ? "rounded-lg bg-white px-3 py-2.5 text-sm font-semibold shadow-sm" : "rounded-lg px-3 py-2.5 text-sm text-slate-500"}>Sign in</button><button type="button" onClick={() => setMode("sign-up")} className={mode === "sign-up" ? "rounded-lg bg-white px-3 py-2.5 text-sm font-semibold shadow-sm" : "rounded-lg px-3 py-2.5 text-sm text-slate-500"}>Create account</button></div><form className="space-y-4" onSubmit={submit}><label className="block space-y-2 text-sm font-semibold text-slate-700"><span>Email address</span><div className="relative"><Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" /><Input className="h-12 rounded-xl border-slate-200 pl-10 shadow-sm" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@agency.com" required /></div></label>{message ? <p className={state === "error" ? "text-sm text-red-700" : "text-sm text-emerald-700"}>{message}</p> : null}<Button className="h-12 w-full rounded-xl bg-slate-900 font-semibold text-white hover:bg-slate-800" disabled={state === "sending"} type="submit">{state === "sending" ? "Sending…" : "Email me a sign-in link"}<ArrowRight className="ml-2 size-4" /></Button></form>{process.env.NODE_ENV === "development" ? <div className="mt-7 border-t border-slate-100 pt-5"><p className="mb-3 text-sm leading-6 text-slate-500">Local preview only — open the demo workspace without email or database setup.</p><Button className="h-11 rounded-xl border-slate-200" disabled={state === "sending"} variant="outline" onClick={openDemo}>Open demo workspace <ArrowRight className="ml-2 size-4" /></Button></div> : null}</>}</section><p className="mt-5 text-center text-xs text-slate-400">Free workspace · Branded letters · Owner approval on every send</p></div></main>
+  return (
+    <main className="grid min-h-screen overflow-x-hidden bg-slate-50 text-slate-900 lg:grid-cols-[minmax(440px,0.9fr)_minmax(520px,1.1fr)]">
+      <section className="order-1 flex items-center justify-center px-4 py-10 sm:px-8 lg:min-h-screen lg:px-10 lg:py-12" aria-labelledby="agency-login-heading">
+        <div className="w-full max-w-[520px]">
+          <Link href="/" className="mb-7 inline-flex items-center gap-2 text-sm font-semibold tracking-tight text-slate-700 transition hover:text-slate-950">
+            <span className="flex size-9 items-center justify-center rounded-xl bg-slate-900 text-white shadow-sm"><Radar className="size-4" /></span>
+            UK Company Radar
+          </Link>
+          <div className="rounded-2xl border border-slate-200 bg-white px-6 py-7 shadow-xl shadow-slate-900/5 sm:px-10 sm:py-9">
+            <div className="mb-7">
+              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Agency Mode</p>
+              <h1 id="agency-login-heading" className="text-3xl font-bold tracking-tight text-slate-950 sm:text-[2rem]">Start your free workspace</h1>
+              <p className="mt-3 max-w-md text-sm leading-6 text-slate-500">Find new companies, prepare branded letters, and approve every send.</p>
+            </div>
+            {clerkEnabled ? <CustomClerkAuth mode={mode} onModeChange={setMode} /> : <><div className="mb-6 grid grid-cols-2 rounded-xl bg-slate-100 p-1"><button type="button" onClick={() => setMode("sign-in")} className={mode === "sign-in" ? "rounded-lg bg-white px-3 py-2.5 text-sm font-semibold shadow-sm" : "rounded-lg px-3 py-2.5 text-sm text-slate-500"}>Sign in</button><button type="button" onClick={() => setMode("sign-up")} className={mode === "sign-up" ? "rounded-lg bg-white px-3 py-2.5 text-sm font-semibold shadow-sm" : "rounded-lg px-3 py-2.5 text-sm text-slate-500"}>Create account</button></div><form className="space-y-4" onSubmit={submit}><label className="block space-y-2 text-sm font-semibold text-slate-700"><span>Email address</span><div className="relative"><Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" /><Input className="h-12 rounded-xl border-slate-200 pl-10 shadow-sm" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@agency.com" required /></div></label>{message ? <p className={state === "error" ? "text-sm text-red-700" : "text-sm text-emerald-700"}>{message}</p> : null}<Button className="h-12 w-full rounded-xl bg-slate-900 font-semibold text-white hover:bg-slate-800" disabled={state === "sending"} type="submit">{state === "sending" ? "Sending…" : "Email me a sign-in link"}<ArrowRight className="ml-2 size-4" /></Button></form>{process.env.NODE_ENV === "development" ? <div className="mt-7 border-t border-slate-100 pt-5"><p className="mb-3 text-sm leading-6 text-slate-500">Local preview only — open the demo workspace without email or database setup.</p><Button className="h-11 rounded-xl border-slate-200" disabled={state === "sending"} variant="outline" onClick={openDemo}>Open demo workspace <ArrowRight className="ml-2 size-4" /></Button></div> : null}</>}
+          </div>
+          <p className="mt-5 text-sm text-slate-400">Free workspace · Branded letters · Owner approval on every send</p>
+        </div>
+      </section>
+
+      <section className="relative order-2 flex min-h-[720px] items-center justify-center overflow-hidden bg-[#111a2e] px-5 py-12 text-white sm:px-10 lg:min-h-screen lg:px-12 lg:py-10" aria-labelledby="letter-preview-heading">
+        <div className="absolute -right-24 -top-24 size-72 rounded-full bg-[#ff5733]/20 blur-2xl" aria-hidden="true" />
+        <div className="absolute -bottom-28 -left-24 size-80 rounded-full bg-[#7066e8]/25 blur-3xl" aria-hidden="true" />
+        <div className="relative z-10 w-full max-w-[680px]">
+          <div className="mx-auto max-w-xl text-center">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#ffc400]">Fully customisable · Printed &amp; posted</p>
+            <h2 id="letter-preview-heading" className="mt-3 text-3xl font-bold leading-tight tracking-tight sm:text-4xl">Reach new companies with a letter that looks like you.</h2>
+            <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-slate-300 sm:text-base">Customise the brand, message and offer. Nothing is sent until you approve it.</p>
+          </div>
+          <figure className="mx-auto mt-8 w-fit max-w-full overflow-hidden rounded-md bg-white shadow-[0_28px_70px_rgba(0,0,0,0.38)] ring-1 ring-white/15 lg:mt-6">
+            <Image
+              className="h-auto max-h-none w-full max-w-[520px] lg:max-h-[65vh] lg:w-auto lg:max-w-full"
+              src="/northstar-customisable-letter.png"
+              alt="Customisable Northstar Digital letter showing branded colours, personalised copy, offer, QR code and signature"
+              width={1414}
+              height={2000}
+              priority
+              sizes="(min-width: 1024px) 42vw, 90vw"
+            />
+          </figure>
+        </div>
+      </section>
+    </main>
+  )
 }
