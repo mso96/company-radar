@@ -3,6 +3,7 @@ import { auth as clerkAuth, currentUser } from "@clerk/nextjs/server"
 import { getAgencyRuntimeEnv, requireAgencyDatabase } from "@/lib/agency/runtime"
 import { ensureAgencyUserAndWorkspace, getAgencySession, getAgencySessionForUser } from "@/lib/agency/db"
 import { getLocalAgencyDemoSession, isLocalAgencyDemoEnabled, LOCAL_DEMO_SESSION_TOKEN } from "@/lib/agency/demo"
+import { ensureWelcomeCredit } from "@/lib/agency/mail"
 
 export const AGENCY_SESSION_COOKIE = "company_radar_session"
 
@@ -19,6 +20,7 @@ async function getClerkAgencySession() {
   if (!email) return null
   const db = requireAgencyDatabase(await getAgencyRuntimeEnv())
   const identity = await ensureAgencyUserAndWorkspace(db, email, userId)
+  await ensureWelcomeCredit(db, identity.workspaceId)
   return getAgencySessionForUser(db, identity.userId)
 }
 

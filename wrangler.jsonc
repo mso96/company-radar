@@ -26,6 +26,12 @@
       "database_id": "48410c5c-1e89-4b77-808d-9f9b06b9a558"
     }
   ],
+  "r2_buckets": [
+    {
+      "binding": "AGENCY_ASSETS",
+      "bucket_name": "company-radar-agency-assets"
+    }
+  ],
   "triggers": {
     "crons": ["0 8 * * *", "*/30 * * * *"]
   }

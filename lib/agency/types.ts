@@ -140,9 +140,13 @@ export interface CreateRadarInput {
   approvalRequired?: boolean
 }
 
-export interface SenderProfile { agencyName: string; address: PostalAddress; replyEmail: string; website?: string; optOutText: string; logoUrl?: string; accentColor?: string }
+export type LetterBlockType = "brand" | "recipient" | "heading" | "paragraph" | "list" | "image" | "cta" | "qr" | "signature" | "divider" | "spacer" | "footer"
+export interface LetterBlock { id: string; type: LetterBlockType; content?: string; items?: string[]; url?: string; alt?: string; align?: "left" | "center" | "right" }
+export interface LetterLayout { version: 1; blocks: LetterBlock[] }
+export interface SenderProfile { agencyName: string; address: PostalAddress; replyEmail: string; website?: string; optOutText: string; logoUrl?: string; accentColor?: string; primaryColor?: string; textColor?: string; fontFamily?: string; headerAlignment?: "left" | "center" | "right" }
 export interface PostalAddress { address1: string; address2?: string; town: string; county?: string; postcode: string; country: string }
-export interface LetterTemplate { id: string; workspaceId: string; name: string; subject: string; bodyHtml: string; ctaText?: string; ctaUrl?: string; signature: string; isDefault: boolean; createdAt: string; sourceTemplateId?: string | null; segmentSlug?: string | null; templateVersion?: string; isPlatformTemplate?: boolean; pricingVersion?: string; pricePence?: number; currency?: string; serviceFocus?: string[] }
+export interface LetterTemplate { id: string; workspaceId: string; name: string; subject: string; bodyHtml: string; ctaText?: string; ctaUrl?: string; signature: string; isDefault: boolean; createdAt: string; sourceTemplateId?: string | null; segmentSlug?: string | null; templateVersion?: string; isPlatformTemplate?: boolean; pricingVersion?: string; pricePence?: number; currency?: string; serviceFocus?: string[]; layout?: LetterLayout }
 export interface CreditPack { id: string; name: string; credits: number; pricePence: number; stripePriceId?: string; active: boolean }
+export interface CreditMovement { id: string; delta: number; reason: string; createdAt: string }
 export interface MailBatch { id: string; name: string; templateId: string; status: string; creditReserved: number; createdAt: string }
 export interface MailItem { id: string; batchId: string; companyNumber: string; companyName: string; status: string; providerStatus?: string | null; providerPdfUrl?: string | null; lastError?: string | null; createdAt: string; customerPricePence?: number | null; currency?: string; marginPence?: number | null }

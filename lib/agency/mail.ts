@@ -1,6 +1,7 @@
-import type { AgencyLead, CreditPack, LetterTemplate, MailBatch, MailItem, PostalAddress, SenderProfile } from "@/lib/agency/types"
+import type { AgencyLead, CreditMovement, CreditPack, LetterLayout, LetterTemplate, MailBatch, MailItem, PostalAddress, SenderProfile } from "@/lib/agency/types"
 import { getStannpLetter } from "@/lib/agency/stannp"
 import { normalizeAccentColor, normalizeExternalUrl } from "@/lib/agency/branding"
+import { normalizeLetterLayout } from "@/lib/agency/letter-layout"
 
 const now = () => new Date().toISOString()
 const json = <T>(value: string | null | undefined, fallback: T) => { try { return value ? JSON.parse(value) as T : fallback } catch { return fallback } }
@@ -12,13 +13,26 @@ export async function getCreditBalance(db: D1Database, workspaceId: string) {
 
 export async function getCreditPacks(db: D1Database): Promise<CreditPack[]> {
   const row = await db.prepare(`SELECT value FROM app_config WHERE key = 'agency_credit_packs'`).first<{ value: string }>()
-  const packs = json<CreditPack[]>(row?.value, [])
+  const packs = json<CreditPack[]>(row?.value, [
+    { id: "credits-25", name: "Starter", credits: 25, pricePence: 2500, active: true },
+    { id: "credits-100", name: "Growth", credits: 100, pricePence: 10000, active: true },
+    { id: "credits-500", name: "Scale", credits: 500, pricePence: 50000, active: true },
+  ])
   return packs.filter((pack) => pack.active && pack.id && pack.credits > 0 && pack.pricePence > 0)
 }
 
+export async function ensureWelcomeCredit(db: D1Database, workspaceId: string) {
+  await db.prepare(`INSERT INTO agency_credit_ledger (id, workspace_id, delta, reason, reference_id, created_at) VALUES (?1, ?2, 1, 'welcome_credit', ?2, ?3) ON CONFLICT DO NOTHING`).bind(crypto.randomUUID(), workspaceId, now()).run()
+}
+
+export async function listCreditMovements(db: D1Database, workspaceId: string): Promise<CreditMovement[]> {
+  const rows = await db.prepare(`SELECT id, delta, reason, created_at FROM agency_credit_ledger WHERE workspace_id = ?1 ORDER BY created_at DESC LIMIT 20`).bind(workspaceId).all<{ id: string; delta: number; reason: string; created_at: string }>()
+  return (rows.results ?? []).map((row) => ({ id: row.id, delta: row.delta, reason: row.reason, createdAt: row.created_at }))
+}
+
 export async function getSenderProfile(db: D1Database, workspaceId: string): Promise<SenderProfile | null> {
-  const row = await db.prepare(`SELECT agency_name, address_json, reply_email, website, opt_out_text, logo_url, accent_color FROM agency_sender_profiles WHERE workspace_id = ?1`).bind(workspaceId).first<{ agency_name: string; address_json: string; reply_email: string; website: string | null; opt_out_text: string; logo_url: string | null; accent_color: string | null }>()
-  return row ? { agencyName: row.agency_name, address: json<PostalAddress>(row.address_json, emptyAddress()), replyEmail: row.reply_email, website: normalizeExternalUrl(row.website), optOutText: row.opt_out_text, logoUrl: normalizeExternalUrl(row.logo_url), accentColor: normalizeAccentColor(row.accent_color) } : null
+  const row = await db.prepare(`SELECT agency_name, address_json, reply_email, website, opt_out_text, logo_url, accent_color, primary_color, text_color, font_family, header_alignment FROM agency_sender_profiles WHERE workspace_id = ?1`).bind(workspaceId).first<{ agency_name: string; address_json: string; reply_email: string; website: string | null; opt_out_text: string; logo_url: string | null; accent_color: string | null; primary_color: string | null; text_color: string | null; font_family: string | null; header_alignment: "left" | "center" | "right" | null }>()
+  return row ? { agencyName: row.agency_name, address: json<PostalAddress>(row.address_json, emptyAddress()), replyEmail: row.reply_email, website: normalizeExternalUrl(row.website), optOutText: row.opt_out_text, logoUrl: normalizeExternalUrl(row.logo_url), accentColor: normalizeAccentColor(row.accent_color), primaryColor: normalizeAccentColor(row.primary_color ?? "#111827"), textColor: normalizeAccentColor(row.text_color ?? "#111827"), fontFamily: normalizeFont(row.font_family), headerAlignment: row.header_alignment ?? "left" } : null
 }
 
 export async function saveSenderProfile(db: D1Database, workspaceId: string, input: SenderProfile) {
@@ -26,7 +40,7 @@ export async function saveSenderProfile(db: D1Database, workspaceId: string, inp
   const accentColor = normalizeAccentColor(input.accentColor)
   const logoUrl = normalizeExternalUrl(input.logoUrl)
   const website = normalizeExternalUrl(input.website)
-  await db.prepare(`INSERT INTO agency_sender_profiles (workspace_id, agency_name, address_json, reply_email, website, opt_out_text, logo_url, accent_color, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9) ON CONFLICT(workspace_id) DO UPDATE SET agency_name=excluded.agency_name,address_json=excluded.address_json,reply_email=excluded.reply_email,website=excluded.website,opt_out_text=excluded.opt_out_text,logo_url=excluded.logo_url,accent_color=excluded.accent_color,updated_at=excluded.updated_at`).bind(workspaceId, input.agencyName.trim(), JSON.stringify(input.address), input.replyEmail.trim(), website, input.optOutText.trim() || "To stop receiving marketing by post, use this reference.", logoUrl, accentColor, now()).run()
+  await db.prepare(`INSERT INTO agency_sender_profiles (workspace_id, agency_name, address_json, reply_email, website, opt_out_text, logo_url, accent_color, primary_color, text_color, font_family, header_alignment, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13) ON CONFLICT(workspace_id) DO UPDATE SET agency_name=excluded.agency_name,address_json=excluded.address_json,reply_email=excluded.reply_email,website=excluded.website,opt_out_text=excluded.opt_out_text,logo_url=excluded.logo_url,accent_color=excluded.accent_color,primary_color=excluded.primary_color,text_color=excluded.text_color,font_family=excluded.font_family,header_alignment=excluded.header_alignment,updated_at=excluded.updated_at`).bind(workspaceId, input.agencyName.trim(), JSON.stringify(input.address), input.replyEmail.trim(), website, input.optOutText.trim() || "To stop receiving marketing by post, use this reference.", logoUrl, accentColor, normalizeAccentColor(input.primaryColor ?? "#111827"), normalizeAccentColor(input.textColor ?? "#111827"), normalizeFont(input.fontFamily), normalizeAlignment(input.headerAlignment), now()).run()
 }
 
 export async function listLetterTemplates(db: D1Database, workspaceId: string): Promise<LetterTemplate[]> {
@@ -39,7 +53,8 @@ export async function saveLetterTemplate(db: D1Database, workspaceId: string, in
   const id = input.id ?? crypto.randomUUID(); const timestamp = now()
   if (input.isDefault) await db.prepare(`UPDATE agency_letter_templates SET is_default = 0 WHERE workspace_id = ?1`).bind(workspaceId).run()
   const services = Array.from(new Set((input.serviceFocus ?? []).map((service) => service.trim()).filter(Boolean)))
-  await db.prepare(`INSERT INTO agency_letter_templates (id, workspace_id, name, subject, body_html, cta_text, cta_url, signature, is_default, created_at, updated_at, service_focus_json) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?10, ?11) ON CONFLICT(id) DO UPDATE SET name=excluded.name,subject=excluded.subject,body_html=excluded.body_html,cta_text=excluded.cta_text,cta_url=excluded.cta_url,signature=excluded.signature,is_default=excluded.is_default,service_focus_json=excluded.service_focus_json,updated_at=excluded.updated_at`).bind(id, workspaceId, input.name.trim(), input.subject.trim(), input.bodyHtml.trim(), input.ctaText?.trim() || null, input.ctaUrl?.trim() || null, input.signature.trim(), input.isDefault ? 1 : 0, timestamp, JSON.stringify(services)).run()
+  const layout = normalizeLetterLayout(input.layout, input)
+  await db.prepare(`INSERT INTO agency_letter_templates (id, workspace_id, name, subject, body_html, cta_text, cta_url, signature, is_default, created_at, updated_at, service_focus_json, layout_json) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?10, ?11, ?12) ON CONFLICT(id) DO UPDATE SET name=excluded.name,subject=excluded.subject,body_html=excluded.body_html,cta_text=excluded.cta_text,cta_url=excluded.cta_url,signature=excluded.signature,is_default=excluded.is_default,service_focus_json=excluded.service_focus_json,layout_json=excluded.layout_json,updated_at=excluded.updated_at`).bind(id, workspaceId, input.name.trim(), input.subject.trim(), input.bodyHtml.trim(), input.ctaText?.trim() || null, input.ctaUrl?.trim() || null, input.signature.trim(), input.isDefault ? 1 : 0, timestamp, JSON.stringify(services), JSON.stringify(layout)).run()
   return id
 }
 
@@ -77,7 +92,7 @@ export async function autoQueueLead(db: D1Database, input: { workspaceId: string
 }
 
 export async function getMailItemForDispatch(db: D1Database, workspaceId: string, itemId: string) {
-  return db.prepare(`SELECT i.*, b.template_id, t.subject, t.body_html, t.cta_text, t.cta_url, t.signature, t.service_focus_json, l.incorporation_date, l.sic_codes_json, l.location, r.service_focus_json AS radar_service_focus_json FROM agency_mail_items i JOIN agency_mail_batches b ON b.id = i.batch_id JOIN agency_letter_templates t ON t.id = b.template_id LEFT JOIN agency_leads l ON l.id = i.lead_id LEFT JOIN agency_radars r ON r.id = l.radar_id WHERE i.id = ?1 AND i.workspace_id = ?2`).bind(itemId, workspaceId).first<DispatchRow>()
+  return db.prepare(`SELECT i.*, b.template_id, t.subject, t.body_html, t.cta_text, t.cta_url, t.signature, t.layout_json, t.service_focus_json, l.incorporation_date, l.sic_codes_json, l.location, r.service_focus_json AS radar_service_focus_json FROM agency_mail_items i JOIN agency_mail_batches b ON b.id = i.batch_id JOIN agency_letter_templates t ON t.id = b.template_id LEFT JOIN agency_leads l ON l.id = i.lead_id LEFT JOIN agency_radars r ON r.id = l.radar_id WHERE i.id = ?1 AND i.workspace_id = ?2`).bind(itemId, workspaceId).first<DispatchRow>()
 }
 
 export async function listPendingMailItems(db: D1Database, workspaceId: string, batchId: string) { const rows = await db.prepare(`SELECT id FROM agency_mail_items WHERE workspace_id = ?1 AND batch_id = ?2 AND status = 'pending_approval'`).bind(workspaceId, batchId).all<{ id: string }>(); return rows.results ?? [] }
@@ -98,19 +113,41 @@ export function renderLetter(row: DispatchRow, sender: SenderProfile, address: P
   const website = normalizeExternalUrl(sender.website)
   const logo = logoUrl ? `<img src="${escapeAttr(logoUrl)}" alt="${escapeAttr(sender.agencyName)}" style="max-height:48px;max-width:180px" />` : `<strong>${escapeHtml(sender.agencyName)}</strong>`
   const accent = normalizeAccentColor(sender.accentColor)
+  const primary = normalizeAccentColor(sender.primaryColor ?? "#111827")
+  const text = normalizeAccentColor(sender.textColor ?? "#111827")
+  const font = normalizeFont(sender.fontFamily)
   const ctaUrl = normalizeExternalUrl(row.cta_url)
   const websiteLine = website ? ` · ${escapeHtml(website)}` : ""
-  return `<article style="font-family:Arial,sans-serif;border-top:8px solid ${escapeAttr(accent)};padding:24px">${logo}<p>${replace(row.subject)}</p>${sanitizeTemplateHtml(replace(row.body_html))}${row.cta_text && ctaUrl ? `<p><a href="${escapeAttr(ctaUrl)}" style="background:${escapeAttr(accent)};color:#000;padding:8px 12px;text-decoration:none">${replace(row.cta_text)}</a></p>` : ""}<p>${replace(row.signature)}</p><hr><small>${escapeHtml(sender.agencyName)}${websiteLine} · ${escapeHtml(sender.replyEmail)} · ${escapeHtml(sender.optOutText)} Reference: ${escapeHtml(row.suppression_reference)}</small></article>`
+  const layout = normalizeLetterLayout(json<LetterLayout | null>(row.layout_json, null), { subject: row.subject, bodyHtml: row.body_html, ctaText: row.cta_text ?? undefined, ctaUrl: row.cta_url ?? undefined, signature: row.signature })
+  const renderBlock = (item: LetterLayout["blocks"][number]) => {
+    const align = normalizeAlignment(item.align)
+    const content = replace(item.content)
+    if (item.type === "brand") return `<div style="text-align:${align};margin-bottom:24px">${logo}</div>`
+    if (item.type === "recipient") return `<div style="margin:0 0 24px"><strong>To:</strong><br>${escapeHtml(row.company_name)}<br>${escapeHtml(addressLines(address))}</div>`
+    if (item.type === "heading") return `<h2 style="color:${primary};text-align:${align};margin:0 0 18px">${content}</h2>`
+    if (item.type === "paragraph") return `<p style="text-align:${align};margin:0 0 12px;line-height:1.55">${content}</p>`
+    if (item.type === "list") return `<ul style="margin:0 0 14px;padding-left:22px">${(item.items?.length ? item.items : [item.content ?? ""]).map((entry) => `<li>${replace(entry)}</li>`).join("")}</ul>`
+    if (item.type === "image") { const url = normalizeExternalUrl(item.url); return url ? `<p style="text-align:${align}"><img src="${escapeAttr(url)}" alt="${escapeAttr(item.alt ?? "")}" style="max-width:100%;max-height:240px" /></p>` : "" }
+    if (item.type === "cta") { const url = normalizeExternalUrl(item.url ?? row.cta_url); return content && url ? `<p style="text-align:${align};margin:18px 0"><a href="${escapeAttr(url)}" style="display:inline-block;background:${accent};color:#000;padding:10px 14px;text-decoration:none;font-weight:700">${content}</a></p>` : "" }
+    if (item.type === "qr") { const url = normalizeExternalUrl(item.url ?? row.cta_url); return url ? `<div style="text-align:${align};margin:18px 0"><img src="https://quickchart.io/qr?size=180&text=${encodeURIComponent(url)}" alt="QR code" width="120" height="120" /><div style="font-size:11px">${escapeHtml(url)}</div></div>` : "" }
+    if (item.type === "signature") return `<p style="text-align:${align};margin:22px 0;font-weight:700">${content || replace(row.signature)}</p>`
+    if (item.type === "divider") return `<hr style="border:0;border-top:1px solid ${primary};margin:18px 0">`
+    if (item.type === "spacer") return `<div style="height:24px"></div>`
+    if (item.type === "footer") return `<footer style="margin-top:22px;border-top:1px solid ${primary};padding-top:10px;font-size:10px;color:${text}">${escapeHtml(sender.agencyName)}${websiteLine} · ${escapeHtml(sender.replyEmail)} · ${escapeHtml(sender.optOutText)} Reference: ${escapeHtml(row.suppression_reference)}</footer>`
+    return ""
+  }
+  return `<article style="box-sizing:border-box;font-family:${escapeAttr(font)},Arial,sans-serif;color:${text};border-top:8px solid ${accent};padding:28px;max-width:794px;min-height:1123px">${layout.blocks.map(renderBlock).join("")}</article>`
 }
 export function emptyAddress(): PostalAddress { return { address1: "", town: "", postcode: "", country: "GB" } }
 function addressLines(address: PostalAddress) { return [address.address1, address.address2, address.town, address.county, address.postcode, address.country].filter(Boolean).join(", ") }
 function shortRef() { return crypto.randomUUID().replaceAll("-", "").slice(0, 12).toUpperCase() }
 function escapeHtml(value: string) { return value.replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]!) }
 function escapeAttr(value: string) { return escapeHtml(value) }
-function sanitizeTemplateHtml(value: string) { return value.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "").replace(/\son\w+=("[^"]*"|'[^']*'|[^\s>]+)/gi, "").replace(/javascript:/gi, "") }
+function normalizeFont(value: string | null | undefined) { return ["Arial", "Georgia", "Helvetica", "Times New Roman"].includes(value ?? "") ? value! : "Arial" }
+function normalizeAlignment(value: string | null | undefined): "left" | "center" | "right" { return value === "center" || value === "right" ? value : "left" }
 function normalizeProviderStatus(value: string) { const normalized = value.toLowerCase(); if (normalized.includes("dispatch")) return "dispatched"; if (normalized.includes("production") || normalized.includes("process")) return "production"; if (normalized.includes("fail") || normalized.includes("cancel")) return "failed"; return "submitted" }
-interface TemplateRow { id: string; workspace_id: string; name: string; subject: string; body_html: string; cta_text: string | null; cta_url: string | null; signature: string; is_default: number; created_at: string; source_template_id: string | null; segment_slug: string | null; template_version: string; is_platform_template: number; pricing_version: string; price_pence: number | null; currency: string | null; service_focus_json?: string }
+interface TemplateRow { id: string; workspace_id: string; name: string; subject: string; body_html: string; cta_text: string | null; cta_url: string | null; signature: string; is_default: number; created_at: string; source_template_id: string | null; segment_slug: string | null; template_version: string; is_platform_template: number; pricing_version: string; price_pence: number | null; currency: string | null; service_focus_json?: string; layout_json?: string | null }
 interface BatchRow { id: string; name: string; template_id: string; status: string; credit_reserved: number; created_at: string }
 interface ItemRow { id: string; batch_id: string; company_number: string; company_name: string; status: string; provider_status: string | null; provider_pdf_url: string | null; last_error: string | null; created_at: string }
-interface DispatchRow { id: string; company_number: string; company_name: string; suppression_reference: string; idempotency_key: string; subject: string; body_html: string; cta_text: string | null; cta_url: string | null; signature: string; service_focus_json?: string | null; radar_service_focus_json?: string | null; incorporation_date?: string | null; sic_codes_json?: string | null; location?: string | null }
-function mapTemplate(row: TemplateRow): LetterTemplate { return { id: row.id, workspaceId: row.workspace_id, name: row.name, subject: row.subject, bodyHtml: row.body_html, ctaText: row.cta_text ?? undefined, ctaUrl: row.cta_url ?? undefined, signature: row.signature, isDefault: Boolean(row.is_default), createdAt: row.created_at, sourceTemplateId: row.source_template_id, segmentSlug: row.segment_slug, templateVersion: row.template_version, isPlatformTemplate: Boolean(row.is_platform_template), pricingVersion: row.pricing_version, pricePence: row.price_pence ?? undefined, currency: row.currency ?? "GBP", serviceFocus: json<string[]>(row.service_focus_json, []) } }
+interface DispatchRow { id: string; company_number: string; company_name: string; suppression_reference: string; idempotency_key: string; subject: string; body_html: string; cta_text: string | null; cta_url: string | null; signature: string; layout_json?: string | null; service_focus_json?: string | null; radar_service_focus_json?: string | null; incorporation_date?: string | null; sic_codes_json?: string | null; location?: string | null }
+function mapTemplate(row: TemplateRow): LetterTemplate { return { id: row.id, workspaceId: row.workspace_id, name: row.name, subject: row.subject, bodyHtml: row.body_html, ctaText: row.cta_text ?? undefined, ctaUrl: row.cta_url ?? undefined, signature: row.signature, isDefault: Boolean(row.is_default), createdAt: row.created_at, sourceTemplateId: row.source_template_id, segmentSlug: row.segment_slug, templateVersion: row.template_version, isPlatformTemplate: Boolean(row.is_platform_template), pricingVersion: row.pricing_version, pricePence: row.price_pence ?? undefined, currency: row.currency ?? "GBP", serviceFocus: json<string[]>(row.service_focus_json, []), layout: normalizeLetterLayout(json<LetterLayout | null>(row.layout_json, null), { subject: row.subject, bodyHtml: row.body_html, ctaText: row.cta_text ?? undefined, ctaUrl: row.cta_url ?? undefined, signature: row.signature }) } }

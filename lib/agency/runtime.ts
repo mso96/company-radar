@@ -11,6 +11,7 @@ export interface AgencyRuntimeEnv {
   STANNP_API_KEY?: string
   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?: string
   CLERK_SECRET_KEY?: string
+  AGENCY_ASSETS?: R2Bucket
 }
 
 export async function getAgencyRuntimeEnv(): Promise<AgencyRuntimeEnv> {
@@ -27,6 +28,7 @@ export async function getAgencyRuntimeEnv(): Promise<AgencyRuntimeEnv> {
     STANNP_API_KEY: (context.env as unknown as { STANNP_API_KEY?: string }).STANNP_API_KEY ?? process.env.STANNP_API_KEY,
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: (context.env as unknown as { NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?: string }).NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
     CLERK_SECRET_KEY: (context.env as unknown as { CLERK_SECRET_KEY?: string }).CLERK_SECRET_KEY ?? process.env.CLERK_SECRET_KEY,
+    AGENCY_ASSETS: (context.env as unknown as { AGENCY_ASSETS?: R2Bucket }).AGENCY_ASSETS,
   } as AgencyRuntimeEnv
 }
 

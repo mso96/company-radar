@@ -11,6 +11,12 @@ declare global {
     batch<T = unknown>(statements: D1PreparedStatement[]): Promise<T[]>
   }
 
+  interface R2ObjectBody { body: ReadableStream; httpEtag: string }
+  interface R2Bucket {
+    put(key: string, value: ArrayBuffer | ReadableStream, options?: { httpMetadata?: { contentType?: string }; customMetadata?: Record<string, string> }): Promise<unknown>
+    get(key: string): Promise<R2ObjectBody | null>
+  }
+
   interface CloudflareEnv {
     ALERTS_DB?: D1Database
     COMPANIES_HOUSE_API_KEY?: string
@@ -24,6 +30,7 @@ declare global {
     TELEGRAM_CHAT_ID?: string
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?: string
     CLERK_SECRET_KEY?: string
+    AGENCY_ASSETS?: R2Bucket
   }
 }
 
