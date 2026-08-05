@@ -32,6 +32,9 @@
       "bucket_name": "company-radar-agency-assets"
     }
   ],
+  "browser": {
+    "binding": "BROWSER"
+  },
   "triggers": {
     "crons": ["0 8 * * *", "*/30 * * * *"]
   }

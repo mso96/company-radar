@@ -9,9 +9,11 @@ export interface AgencyRuntimeEnv {
   STRIPE_SECRET_KEY?: string
   STRIPE_WEBHOOK_SECRET?: string
   STANNP_API_KEY?: string
+  FRANKK_API_KEY?: string
   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?: string
   CLERK_SECRET_KEY?: string
   AGENCY_ASSETS?: R2Bucket
+  BROWSER?: import("@/lib/agency/pdf").BrowserPdfBinding
 }
 
 export async function getAgencyRuntimeEnv(): Promise<AgencyRuntimeEnv> {
@@ -26,9 +28,11 @@ export async function getAgencyRuntimeEnv(): Promise<AgencyRuntimeEnv> {
     STRIPE_SECRET_KEY: context.env.STRIPE_SECRET_KEY ?? process.env.STRIPE_SECRET_KEY,
     STRIPE_WEBHOOK_SECRET: context.env.STRIPE_WEBHOOK_SECRET ?? process.env.STRIPE_WEBHOOK_SECRET,
     STANNP_API_KEY: (context.env as unknown as { STANNP_API_KEY?: string }).STANNP_API_KEY ?? process.env.STANNP_API_KEY,
+    FRANKK_API_KEY: (context.env as unknown as { FRANKK_API_KEY?: string }).FRANKK_API_KEY ?? process.env.FRANKK_API_KEY,
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: (context.env as unknown as { NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?: string }).NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
     CLERK_SECRET_KEY: (context.env as unknown as { CLERK_SECRET_KEY?: string }).CLERK_SECRET_KEY ?? process.env.CLERK_SECRET_KEY,
     AGENCY_ASSETS: (context.env as unknown as { AGENCY_ASSETS?: R2Bucket }).AGENCY_ASSETS,
+    BROWSER: (context.env as unknown as { BROWSER?: import("@/lib/agency/pdf").BrowserPdfBinding }).BROWSER,
   } as AgencyRuntimeEnv
 }
 

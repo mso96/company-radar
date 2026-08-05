@@ -31,6 +31,8 @@ declare global {
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?: string
     CLERK_SECRET_KEY?: string
     AGENCY_ASSETS?: R2Bucket
+    FRANKK_API_KEY?: string
+    BROWSER?: import("@/lib/agency/pdf").BrowserPdfBinding
   }
 }
 
