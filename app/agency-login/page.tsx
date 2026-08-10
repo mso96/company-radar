@@ -1,4 +1,4 @@
 import { AgencyLogin } from "@/components/agency/agency-login"
 
-export const metadata = { title: "Start your free Agency workspace | UK Company Radar", description: "Create a free Agency Mode workspace with Google or email." }
+export const metadata = { title: "Agency workspace sign in | UK Company Radar", description: "Private beta access for Agency Mode pilots.", robots: { index: false, follow: false } }
 export default function AgencyLoginPage() { return <AgencyLogin /> }

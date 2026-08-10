@@ -59,7 +59,7 @@ export default async function SectorLandingPage({ params }: { params: Promise<{ 
           <h1 className="mt-4 max-w-3xl text-4xl font-black leading-[.98] sm:text-5xl">{page.title}</h1>
           <p className="mt-4 max-w-2xl text-base leading-7 text-muted-foreground">{page.description}</p>
           <div className="mt-5 flex flex-wrap gap-2">{labelsForSicCodes(page.sicCodes).map((label) => <Badge key={label} variant="outline" className="border-2">{label}</Badge>)}</div>
-          <div className="mt-6"><Button asChild><Link href="/agency-login">Get this radar daily <ArrowRight className="ml-2 size-4" /></Link></Button></div>
+          <div className="mt-6"><Button asChild><Link href="/agency#waitlist">Join the Agency Mode waitlist <ArrowRight className="ml-2 size-4" /></Link></Button></div>
         </header>
         <section className="grid gap-4 sm:grid-cols-3">
           <Stat icon={<Building2 />} label="Today’s public preview" value={companies.length} />

@@ -5,6 +5,7 @@ import { ArrowRight, Calculator, Check, Gift, Mail, Megaphone, MessageSquareText
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { AgencyWaitlist } from "@/components/agency/agency-waitlist"
 import { MarketingHeader } from "@/components/marketing/marketing-header"
 
 export const metadata: Metadata = {
@@ -14,16 +15,16 @@ export const metadata: Metadata = {
 }
 
 const audiences = [
-  { name: "Solicitors & legal firms", description: "Reach founders early with company, contract, trademark and employment legal support.", href: "/agency-login", action: "Build a legal campaign", icon: Scale },
-  { name: "Marketing & digital agencies", description: "Introduce branding, websites, SEO and launch campaigns while a new business is choosing partners.", href: "/agency-login", action: "Build an agency campaign", icon: Megaphone },
-  { name: "Accountants & bookkeepers", description: "Offer tax, payroll, bookkeeping and financial setup when a new company needs them most.", href: "/agency-login", action: "Build an accounting campaign", icon: Calculator },
-  { name: "Print & promotional suppliers", description: "Reach new businesses looking for signage, uniforms, merchandise, stationery and launch materials.", href: "/agency-login", action: "Build a supplier campaign", icon: Gift },
+  { name: "Solicitors & legal firms", description: "Reach founders early with company, contract, trademark and employment legal support.", href: "/agency#waitlist", action: "Join the waitlist", icon: Scale },
+  { name: "Marketing & digital agencies", description: "Introduce branding, websites, SEO and launch campaigns while a new business is choosing partners.", href: "/agency#waitlist", action: "Join the waitlist", icon: Megaphone },
+  { name: "Accountants & bookkeepers", description: "Offer tax, payroll, bookkeeping and financial setup when a new company needs them most.", href: "/agency#waitlist", action: "Join the waitlist", icon: Calculator },
+  { name: "Print & promotional suppliers", description: "Reach new businesses looking for signage, uniforms, merchandise, stationery and launch materials.", href: "/agency#waitlist", action: "Join the waitlist", icon: Gift },
 ]
 
 const targetProfiles = [
   { title: "New ecommerce businesses", description: "Online retailers and new merchants preparing their first store and growth plan.", href: "/new-ecommerce-companies" },
-  { title: "New gyms & fitness studios", description: "Fitness businesses looking for memberships, local visibility and a strong launch.", href: "/agency-login" },
-  { title: "New restaurants & hospitality", description: "New venues and hospitality teams building awareness before their opening day.", href: "/agency-login" },
+  { title: "New gyms & fitness studios", description: "Fitness businesses looking for memberships, local visibility and a strong launch.", href: "/agency#waitlist" },
+  { title: "New restaurants & hospitality", description: "New venues and hospitality teams building awareness before their opening day.", href: "/agency#waitlist" },
   { title: "New property businesses", description: "Property, estate and development companies making their first commercial moves.", href: "/new-property-companies" },
 ]
 
@@ -42,13 +43,13 @@ export default function AgencyMarketingPage() {
         <section className="order-1 overflow-hidden border-2 bg-card shadow-[6px_6px_0_0_hsl(var(--foreground))]">
           <div className="grid gap-8 px-5 py-8 sm:px-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:px-10 lg:py-12">
             <div>
-              <Badge className="border-2" variant="outline">Agency Mode · free workspace</Badge>
+              <Badge className="border-2" variant="outline">Agency Mode · private beta</Badge>
               <h1 className="mt-5 max-w-3xl text-4xl font-black leading-[.96] sm:text-6xl">Find new companies. Reach them first.</h1>
               <p className="mt-5 max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg">
                 Choose the SIC codes and locations you sell into. We surface newly incorporated companies, help you personalise the letter, and keep every physical send behind your approval.
               </p>
               <div className="mt-6 flex flex-wrap gap-3">
-                <Button asChild size="lg"><Link href="/agency-login">Start with Agency Mode <ArrowRight className="size-4" /></Link></Button>
+                <Button asChild size="lg"><Link href="#waitlist">Join the private beta <ArrowRight className="size-4" /></Link></Button>
                 <Link className="inline-flex items-center px-2 text-sm font-bold underline-offset-4 hover:underline" href="#how-it-works">See how it works</Link>
               </div>
             </div>
@@ -109,7 +110,7 @@ export default function AgencyMarketingPage() {
                     <p className="flex items-start gap-2 text-sm font-bold"><span className="flex size-5 shrink-0 items-center justify-center bg-[hsl(var(--chart-2))]" aria-hidden="true"><Check className="size-3.5" /></span> Nothing is printed or posted until you approve it.</p>
                   </div>
                   <Button asChild className="mt-5 w-fit" size="lg">
-                    <Link href="/agency-login">Customise your letter <ArrowRight className="size-4" /></Link>
+                    <Link href="#waitlist">Join the waitlist <ArrowRight className="size-4" /></Link>
                   </Button>
                 </aside>
                 <figure className="order-2 bg-muted p-4 sm:p-6 lg:order-1 lg:p-8">
@@ -146,7 +147,7 @@ export default function AgencyMarketingPage() {
           </div>
         </section>
 
-        <section className="order-6 border-2 bg-foreground p-6 text-background shadow-[6px_6px_0_0_hsl(var(--chart-2))] sm:p-8"><div className="flex flex-col items-start justify-between gap-5 sm:flex-row sm:items-center"><div><p className="text-xs font-black uppercase tracking-wide opacity-70">Ready to test your market?</p><h2 className="mt-1 text-3xl font-black">Build your first radar in minutes.</h2><p className="mt-2 max-w-xl text-sm opacity-80">The workspace is free. Physical letters stay in review until you approve the send.</p></div><Button asChild size="lg" variant="secondary"><Link href="/agency-login">Open Agency Mode <ArrowRight className="size-4" /></Link></Button></div></section>
+        <div className="order-6"><AgencyWaitlist /></div>
       </div>
     </main>
   )
