@@ -104,7 +104,7 @@ export async function createMailBatchFromLeads(db: D1Database, input: { workspac
   if (!ids.length) throw new Error("Select at least one lead.")
   if (ids.length > 20) throw new Error("A pilot batch can contain at most 20 letters.")
   const placeholders = ids.map(() => "?").join(",")
-  const leads = await db.prepare(`SELECT id, radar_id, company_number, company_name FROM agency_leads WHERE workspace_id = ?1 AND id IN (${placeholders})`).bind(input.workspaceId, ...ids).all<{ id: string; radar_id: string; company_number: string; company_name: string }>()
+  const leads = await db.prepare(`SELECT id, radar_id, company_number, company_name FROM agency_leads WHERE workspace_id = ? AND id IN (${placeholders})`).bind(input.workspaceId, ...ids).all<{ id: string; radar_id: string; company_number: string; company_name: string }>()
   if (!(leads.results ?? []).length) throw new Error("Selected leads are no longer available.")
   const id = crypto.randomUUID(); const timestamp = now()
   const radarId = input.radarId ?? leads.results?.[0]?.radar_id
@@ -112,12 +112,16 @@ export async function createMailBatchFromLeads(db: D1Database, input: { workspac
   const companyNumbers = (leads.results ?? []).map((lead) => lead.company_number)
   const companyPlaceholders = companyNumbers.map(() => "?").join(",")
   const blocked = await db.prepare(`SELECT company_number, reason FROM (
-    SELECT company_number, 'suppressed' AS reason FROM agency_suppressions WHERE workspace_id=?1 AND company_number IN (${companyPlaceholders})
+    SELECT company_number, 'suppressed' AS reason FROM agency_suppressions WHERE workspace_id=? AND company_number IN (${companyPlaceholders})
     UNION ALL
-    SELECT company_number, 'already sent' AS reason FROM agency_mail_items WHERE workspace_id=?1 AND company_number IN (${companyPlaceholders}) AND status IN ('submitted','production','dispatched')
+    SELECT company_number, 'already sent' AS reason FROM agency_mail_items WHERE workspace_id=? AND company_number IN (${companyPlaceholders}) AND status IN ('submitted','production','dispatched')
     UNION ALL
-    SELECT i.company_number, 'already in a batch' AS reason FROM agency_mail_items i JOIN agency_mail_batches b ON b.id=i.batch_id WHERE i.workspace_id=?1 AND b.radar_id=?2 AND i.company_number IN (${companyPlaceholders}) AND i.status IN ('draft','pending_approval','sending')
-  ) LIMIT 1`).bind(input.workspaceId, ...companyNumbers, ...companyNumbers, radarId, ...companyNumbers).first<{ company_number: string; reason: string }>()
+    SELECT i.company_number, 'already in a batch' AS reason FROM agency_mail_items i JOIN agency_mail_batches b ON b.id=i.batch_id WHERE i.workspace_id=? AND b.radar_id=? AND i.company_number IN (${companyPlaceholders}) AND i.status IN ('draft','pending_approval','sending')
+  ) LIMIT 1`).bind(
+    input.workspaceId, ...companyNumbers,
+    input.workspaceId, ...companyNumbers,
+    input.workspaceId, radarId, ...companyNumbers,
+  ).first<{ company_number: string; reason: string }>()
   if (blocked) throw new Error(`${blocked.company_number} is ${blocked.reason} and cannot be added.`)
   const target = qrTarget(json<LetterLayout | null>((await db.prepare(`SELECT layout_json FROM agency_letter_templates WHERE id=?1`).bind(input.templateId).first<{layout_json:string|null}>())?.layout_json, null))
   const statements = [db.prepare(`INSERT INTO agency_mail_batches (id, workspace_id, template_id, radar_id, name, status, created_by_user_id, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, 'pending_approval', ?6, ?7, ?7)`).bind(id, input.workspaceId, input.templateId, radarId, input.name?.trim() || `New company outreach — ${new Date().toLocaleDateString("en-GB")}`, input.userId, timestamp)]
