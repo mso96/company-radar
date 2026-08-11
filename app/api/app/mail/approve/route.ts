@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     if (!sender) throw new Error("Complete the sender profile before mailing.")
     const items = await listPendingMailItems(db, session.workspaceId, batchId)
     if (!items.length) throw new Error("This batch has no pending letters.")
-    if (!items[0].previewed_at) throw new Error("Open the real Frankk PDF preview before approving this batch.")
+    if (!items[0].previewed_at || !items[0].preview_opened_at) throw new Error("Open the PDF preview before approving this batch.")
     const customerBalance = await getCreditBalance(db, session.workspaceId)
     if (customerBalance < items.length) throw new Error(`Insufficient credits. You need ${items.length} credits and have ${customerBalance}.`)
     const env = await getAgencyRuntimeEnv(); const client = new FrankkClient(requireAgencyEnvValue(env.FRANKK_API_KEY, "FRANKK_API_KEY"))
@@ -32,8 +32,8 @@ export async function POST(request: Request) {
     for (const campaign of campaigns) {
       await client.approve(campaign.campaignId)
       const cost = await client.cost(campaign.campaignId)
-      if (cost.currency !== "GBP") throw new Error(`Frankk returned ${cost.currency}; only GBP campaigns can be scheduled.`)
-      if (cost.costPerRecipientPence > MAX_NET_COST_PENCE) throw new Error(`Frankk cost is £${(cost.costPerRecipientPence / 100).toFixed(2)} per recipient, above the £1.50 safety limit.`)
+      if (cost.currency !== "GBP") throw new Error(`The print service returned ${cost.currency}; only GBP campaigns can be scheduled.`)
+      if (cost.costPerRecipientPence > MAX_NET_COST_PENCE) throw new Error(`The print cost is £${(cost.costPerRecipientPence / 100).toFixed(2)} per recipient, above the £1.50 safety limit.`)
       await updateFrankkMailItem(db, session.workspaceId, campaign.itemId, { status: "pending_approval", quotedCostPence: cost.costPerRecipientPence, totalCostPence: cost.totalPence, currency: cost.currency, providerStatus: "Approved" })
       prepared.push({ itemId: campaign.itemId, campaignId: campaign.campaignId, cost, date })
     }
@@ -50,12 +50,13 @@ export async function POST(request: Request) {
         results.push({ itemId: item.itemId, status: "scheduled", dispatchDate: item.date })
       } catch (error) {
         const unknown = error instanceof FrankkError && error.submissionUnknown
-        await updateFrankkMailItem(db, session.workspaceId, item.itemId, { status: unknown ? "blocked" : "failed", providerStatus: unknown ? "submission_unknown" : "Failed", error: error instanceof Error ? error.message : "Frankk submission failed.", submissionUnknown: unknown })
+        const message = error instanceof FrankkError ? (unknown ? "The delivery result is uncertain and needs manual review." : "The print service could not schedule this letter.") : error instanceof Error ? error.message : "The print submission failed."
+        await updateFrankkMailItem(db, session.workspaceId, item.itemId, { status: unknown ? "blocked" : "failed", providerStatus: unknown ? "submission_unknown" : "Failed", error: message, submissionUnknown: unknown })
         if (!unknown) await refundCredit(db, session.workspaceId, item.itemId)
-        results.push({ itemId: item.itemId, status: unknown ? "submission_unknown" : "failed", error: error instanceof Error ? error.message : "Frankk submission failed." })
+        results.push({ itemId: item.itemId, status: unknown ? "submission_unknown" : "failed", error: message })
       }
     }
     await completeMailBatch(db, session.workspaceId, batchId, results.some((item) => item.status === "scheduled") ? "completed" : "failed")
     return NextResponse.json({ results })
-  } catch (error) { return agencyError(error) }
+  } catch (error) { return agencyError(new Error(error instanceof FrankkError ? "The print service is temporarily unavailable. Your credits have not been changed." : error instanceof Error ? error.message : "Unable to schedule the letters.")) }
 }

@@ -1,4 +1,4 @@
-import type { AgencyLead, CreditMovement, CreditPack, LetterLayout, LetterTemplate, MailBatch, MailItem, PostalAddress, SenderProfile } from "@/lib/agency/types"
+import type { AgencyLead, CreditMovement, CreditPack, LetterLayout, LetterTemplate, MailBatch, MailItem, ManualRecipient, PostalAddress, SenderProfile } from "@/lib/agency/types"
 import { FrankkClient } from "@/lib/agency/frankk"
 import { normalizeAccentColor, normalizeExternalUrl } from "@/lib/agency/branding"
 import { normalizeLetterLayout } from "@/lib/agency/letter-layout"
@@ -88,13 +88,13 @@ export async function saveLetterTemplate(db: D1Database, workspaceId: string, in
 }
 
 export async function listMailBatches(db: D1Database, workspaceId: string): Promise<MailBatch[]> {
-  const rows = await db.prepare(`SELECT id, name, template_id, radar_id, status, credit_reserved, created_at FROM agency_mail_batches WHERE workspace_id = ?1 ORDER BY created_at DESC LIMIT 100`).bind(workspaceId).all<BatchRow>()
-  return (rows.results ?? []).map((row) => ({ id: row.id, name: row.name, templateId: row.template_id, radarId: row.radar_id, status: row.status, creditReserved: row.credit_reserved, createdAt: row.created_at }))
+  const rows = await db.prepare(`SELECT id, name, template_id, radar_id, batch_kind, status, credit_reserved, created_at FROM agency_mail_batches WHERE workspace_id = ?1 ORDER BY created_at DESC LIMIT 100`).bind(workspaceId).all<BatchRow>()
+  return (rows.results ?? []).map((row) => ({ id: row.id, name: row.name, templateId: row.template_id, radarId: row.radar_id, batchKind: row.batch_kind === "test" ? "test" : "campaign", status: row.status, creditReserved: row.credit_reserved, createdAt: row.created_at }))
 }
 
 export async function listMailItems(db: D1Database, workspaceId: string): Promise<MailItem[]> {
-  const rows = await db.prepare(`SELECT id, batch_id, company_number, company_name, status, provider, provider_status, provider_campaign_id, provider_pdf_url, scheduled_at, submission_unknown_at, last_error, created_at, qr_scan_count, qr_first_scanned_at, qr_last_scanned_at FROM agency_mail_items WHERE workspace_id = ?1 ORDER BY created_at DESC LIMIT 200`).bind(workspaceId).all<ItemRow>()
-  return (rows.results ?? []).map((row) => ({ id: row.id, batchId: row.batch_id, companyNumber: row.company_number, companyName: row.company_name, status: row.status, provider: row.provider, providerStatus: row.provider_status, providerCampaignId: row.provider_campaign_id, providerPdfUrl: row.provider_pdf_url, scheduledAt: row.scheduled_at, submissionUnknownAt: row.submission_unknown_at, lastError: row.last_error, createdAt: row.created_at, qrScanCount: row.qr_scan_count ?? 0, qrFirstScannedAt: row.qr_first_scanned_at, qrLastScannedAt: row.qr_last_scanned_at }))
+  const rows = await db.prepare(`SELECT id, batch_id, company_number, company_name, status, provider_status, scheduled_at, submission_unknown_at, preview_opened_at, last_error, created_at, qr_scan_count, qr_first_scanned_at, qr_last_scanned_at, manual_recipient_json FROM agency_mail_items WHERE workspace_id = ?1 ORDER BY created_at DESC LIMIT 200`).bind(workspaceId).all<ItemRow>()
+  return (rows.results ?? []).map((row) => ({ id: row.id, batchId: row.batch_id, companyNumber: row.company_number, companyName: row.company_name, status: row.status, providerStatus: publicDeliveryStatus(row.status, row.provider_status), scheduledAt: row.scheduled_at, submissionUnknownAt: row.submission_unknown_at, previewOpenedAt: row.preview_opened_at, lastError: publicDeliveryError(row.last_error), createdAt: row.created_at, qrScanCount: row.qr_scan_count ?? 0, qrFirstScannedAt: row.qr_first_scanned_at, qrLastScannedAt: row.qr_last_scanned_at, manualRecipient: json<ManualRecipient | null>(row.manual_recipient_json, null) }))
 }
 
 export async function createMailBatchFromLeads(db: D1Database, input: { workspaceId: string; userId: string; templateId: string; leadIds: string[]; name?: string; radarId?: string }) {
@@ -130,6 +130,21 @@ export async function createMailBatchFromLeads(db: D1Database, input: { workspac
   return id
 }
 
+export async function createTestMailBatch(db: D1Database, input: { workspaceId: string; userId: string; campaignId: string; templateId: string; recipient: ManualRecipient }) {
+  const recipient = normalizeManualRecipient(input.recipient)
+  const campaign = await db.prepare(`SELECT id FROM agency_radars WHERE id=?1 AND workspace_id=?2 AND mail_template_id=?3 AND archived_at IS NULL`).bind(input.campaignId, input.workspaceId, input.templateId).first()
+  if (!campaign) throw new Error("This campaign letter is no longer available.")
+  const template = await db.prepare(`SELECT id,layout_json FROM agency_letter_templates WHERE id=?1 AND workspace_id=?2 AND COALESCE(is_campaign_snapshot,0)=1`).bind(input.templateId, input.workspaceId).first<{ id: string; layout_json: string | null }>()
+  if (!template) throw new Error("This campaign does not have a saved letter snapshot.")
+  const batchId = crypto.randomUUID(); const itemId = crypto.randomUUID(); const timestamp = now()
+  const target = qrTarget(json<LetterLayout | null>(template.layout_json, null))
+  await db.batch([
+    db.prepare(`INSERT INTO agency_mail_batches (id,workspace_id,template_id,radar_id,batch_kind,name,status,created_by_user_id,created_at,updated_at) VALUES (?1,?2,?3,?4,'test',?5,'pending_approval',?6,?7,?7)`).bind(batchId, input.workspaceId, input.templateId, input.campaignId, `Test letter · ${recipient.name}`, input.userId, timestamp),
+    db.prepare(`INSERT INTO agency_mail_items (id,workspace_id,batch_id,lead_id,company_number,company_name,manual_recipient_json,address_json,status,suppression_reference,idempotency_key,qr_target_url,qr_tracking_token,created_at,updated_at) VALUES (?1,?2,?3,NULL,?4,?5,?6,?7,'pending_approval',?8,?9,?10,?11,?12,?12)`).bind(itemId, input.workspaceId, batchId, `MANUAL-TEST-${itemId.slice(0, 12).toUpperCase()}`, recipient.name, JSON.stringify(recipient), JSON.stringify(recipient.address), shortRef(), crypto.randomUUID(), target, target ? secureToken() : null, timestamp),
+  ])
+  return { batchId, itemId, recipient }
+}
+
 export async function autoQueueLead(db: D1Database, input: { workspaceId: string; radarId: string; leadId: string; companyNumber: string; companyName: string }) {
   const radar = await db.prepare(`SELECT mail_template_id FROM agency_radars WHERE id = ?1 AND workspace_id = ?2 AND auto_queue_letters = 1`).bind(input.radarId, input.workspaceId).first<{ mail_template_id: string | null }>()
   if (!radar?.mail_template_id) return
@@ -142,7 +157,7 @@ export async function getMailItemForDispatch(db: D1Database, workspaceId: string
   return db.prepare(`SELECT i.*, b.template_id, t.subject, t.body_html, t.cta_text, t.cta_url, t.signature, t.layout_json, t.service_focus_json, l.incorporation_date, l.sic_codes_json, l.location, r.service_focus_json AS radar_service_focus_json FROM agency_mail_items i JOIN agency_mail_batches b ON b.id = i.batch_id JOIN agency_letter_templates t ON t.id = b.template_id LEFT JOIN agency_leads l ON l.id = i.lead_id LEFT JOIN agency_radars r ON r.id = l.radar_id WHERE i.id = ?1 AND i.workspace_id = ?2`).bind(itemId, workspaceId).first<DispatchRow>()
 }
 
-export async function listPendingMailItems(db: D1Database, workspaceId: string, batchId: string) { const rows = await db.prepare(`SELECT id, previewed_at FROM agency_mail_items WHERE workspace_id = ?1 AND batch_id = ?2 AND status = 'pending_approval' ORDER BY created_at ASC`).bind(workspaceId, batchId).all<{ id: string; previewed_at: string | null }>(); return rows.results ?? [] }
+export async function listPendingMailItems(db: D1Database, workspaceId: string, batchId: string) { const rows = await db.prepare(`SELECT id, previewed_at, preview_opened_at FROM agency_mail_items WHERE workspace_id = ?1 AND batch_id = ?2 AND status = 'pending_approval' ORDER BY created_at ASC`).bind(workspaceId, batchId).all<{ id: string; previewed_at: string | null; preview_opened_at: string | null }>(); return rows.results ?? [] }
 export async function reserveCredits(db: D1Database, workspaceId: string, batchId: string, count: number) { const timestamp = now(); const reservationId = crypto.randomUUID(); const result = await db.prepare(`INSERT INTO agency_credit_ledger (id, workspace_id, delta, reason, reference_id, created_at) SELECT ?1, ?2, ?3, 'mail_reservation', ?4, ?5 WHERE EXISTS (SELECT 1 FROM agency_mail_batches WHERE id=?4 AND workspace_id=?2 AND status='pending_approval') AND (SELECT COALESCE(SUM(delta),0) FROM agency_credit_ledger WHERE workspace_id=?2) >= ?6 ON CONFLICT DO NOTHING`).bind(reservationId, workspaceId, -count, batchId, timestamp, count).run() as { meta?: { changes?: number }; changes?: number }; if (Number(result.meta?.changes ?? result.changes ?? 0) !== 1) { const balance = await getCreditBalance(db, workspaceId); if (balance < count) throw new Error(`Insufficient credits. You need ${count} credits and have ${balance}.`); throw new Error("This batch is already being approved or has already been processed.") } await db.prepare(`UPDATE agency_mail_batches SET status='approved', credit_reserved=?1, approved_at=?2, updated_at=?2 WHERE id=?3 AND workspace_id=?4 AND status='pending_approval'`).bind(count, timestamp, batchId, workspaceId).run() }
 export async function refundCredit(db: D1Database, workspaceId: string, itemId: string) { await db.prepare(`INSERT INTO agency_credit_ledger (id, workspace_id, delta, reason, reference_id, created_at) SELECT ?1, ?2, 1, 'mail_refund', ?3, ?4 WHERE EXISTS (SELECT 1 FROM agency_mail_items WHERE id=?3 AND workspace_id=?2) ON CONFLICT DO NOTHING`).bind(crypto.randomUUID(), workspaceId, itemId, now()).run() }
 export async function addCredits(db: D1Database, input: { workspaceId: string; credits: number; checkoutSessionId: string }) { await db.prepare(`INSERT INTO agency_credit_ledger (id, workspace_id, delta, reason, stripe_checkout_session_id, created_at) VALUES (?1, ?2, ?3, 'credit_purchase', ?4, ?5) ON CONFLICT(stripe_checkout_session_id) DO NOTHING`).bind(crypto.randomUUID(), input.workspaceId, input.credits, input.checkoutSessionId, now()).run() }
@@ -210,9 +225,24 @@ function printDecor(preset: string, accent: string, primary: string) {
   return [span(`left:0;top:0;bottom:0;width:8px;background:${accent}`), span(`right:64px;top:58px;width:176px;height:1px;background:${primary}`)].join("")
 }
 interface TemplateRow { id: string; workspace_id: string; name: string; subject: string; body_html: string; cta_text: string | null; cta_url: string | null; signature: string; is_default: number; created_at: string; source_template_id: string | null; segment_slug: string | null; template_version: string; is_platform_template: number; is_campaign_snapshot?: number; pricing_version: string; price_pence: number | null; currency: string | null; service_focus_json?: string; layout_json?: string | null }
-interface BatchRow { id: string; name: string; template_id: string; radar_id: string | null; status: string; credit_reserved: number; created_at: string }
-interface ItemRow { id: string; batch_id: string; company_number: string; company_name: string; status: string; provider: string | null; provider_status: string | null; provider_campaign_id: string | null; provider_pdf_url: string | null; scheduled_at: string | null; submission_unknown_at: string | null; last_error: string | null; created_at: string; qr_scan_count?: number; qr_first_scanned_at?: string | null; qr_last_scanned_at?: string | null }
-export interface DispatchRow { id: string; company_number: string; company_name: string; suppression_reference: string; idempotency_key: string; qr_tracking_token?: string | null; subject: string; body_html: string; cta_text: string | null; cta_url: string | null; signature: string; layout_json?: string | null; service_focus_json?: string | null; radar_service_focus_json?: string | null; incorporation_date?: string | null; sic_codes_json?: string | null; location?: string | null }
+interface BatchRow { id: string; name: string; template_id: string; radar_id: string | null; batch_kind: string | null; status: string; credit_reserved: number; created_at: string }
+interface ItemRow { id: string; batch_id: string; company_number: string; company_name: string; status: string; provider_status: string | null; scheduled_at: string | null; submission_unknown_at: string | null; preview_opened_at: string | null; last_error: string | null; created_at: string; qr_scan_count?: number; qr_first_scanned_at?: string | null; qr_last_scanned_at?: string | null; manual_recipient_json?: string | null }
+export interface DispatchRow { id: string; company_number: string; company_name: string; manual_recipient_json?: string | null; suppression_reference: string; idempotency_key: string; qr_tracking_token?: string | null; subject: string; body_html: string; cta_text: string | null; cta_url: string | null; signature: string; layout_json?: string | null; service_focus_json?: string | null; radar_service_focus_json?: string | null; incorporation_date?: string | null; sic_codes_json?: string | null; location?: string | null }
 function mapTemplate(row: TemplateRow): LetterTemplate { return { id: row.id, workspaceId: row.workspace_id, name: row.name, subject: row.subject, bodyHtml: row.body_html, ctaText: row.cta_text ?? undefined, ctaUrl: row.cta_url ?? undefined, signature: row.signature, isDefault: Boolean(row.is_default), createdAt: row.created_at, sourceTemplateId: row.source_template_id, segmentSlug: row.segment_slug, templateVersion: row.template_version, isPlatformTemplate: Boolean(row.is_platform_template), isCampaignSnapshot: Boolean(row.is_campaign_snapshot), pricingVersion: row.pricing_version, pricePence: row.price_pence ?? undefined, currency: row.currency ?? "GBP", serviceFocus: json<string[]>(row.service_focus_json, []), layout: normalizeLetterLayout(json<LetterLayout | null>(row.layout_json, null), { subject: row.subject, bodyHtml: row.body_html, ctaText: row.cta_text ?? undefined, ctaUrl: row.cta_url ?? undefined, signature: row.signature }) } }
 function qrTarget(layout: LetterLayout | null) { const raw = layout?.blocks.find((item) => item.type === "qr")?.url; return normalizeExternalUrl(raw) || null }
 function secureToken() { const bytes = crypto.getRandomValues(new Uint8Array(24)); return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("") }
+function normalizeManualRecipient(input: ManualRecipient): ManualRecipient {
+  const name = input?.name?.trim()
+  const address = input?.address
+  if (!name || name.length > 120) throw new Error("Enter a valid recipient name.")
+  if (!address?.address1?.trim() || !address.town?.trim() || !address.postcode?.trim()) throw new Error("Complete the recipient address and postcode.")
+  const postcode = address.postcode.trim().toUpperCase().replace(/\s+/g, " ")
+  if (!/^[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}$/.test(postcode)) throw new Error("Enter a valid UK postcode.")
+  const clean = (value: string | undefined, max = 120) => value?.trim().slice(0, max) || undefined
+  return { name, address: { address1: clean(address.address1)!, address2: clean(address.address2), town: clean(address.town, 80)!, county: clean(address.county, 80), postcode, country: "United Kingdom" } }
+}
+function publicDeliveryStatus(status: string, providerStatus: string | null) {
+  if (providerStatus === "submission_unknown") return "Needs review"
+  return ({ pending_approval: "Preview ready", sending: "Preparing", submitted: "Scheduled", production: "In production", dispatched: "Dispatched", failed: "Failed / credit refunded", blocked: "Needs review" } as Record<string, string>)[status] ?? status.replaceAll("_", " ")
+}
+function publicDeliveryError(value: string | null) { return value ? value.replace(/Frankk/gi, "The print service") : null }

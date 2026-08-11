@@ -9,6 +9,7 @@ export async function GET(_request: Request, context: { params: Promise<{ itemId
     if (!row?.provider_preview_key) return new Response("Preview not found.", { status: 404 })
     const env = await getAgencyRuntimeEnv(); const object = await env.AGENCY_ASSETS?.get(row.provider_preview_key)
     if (!object) return new Response("Preview not found.", { status: 404 })
+    await db.prepare(`UPDATE agency_mail_items SET preview_opened_at=COALESCE(preview_opened_at,?1),updated_at=?1 WHERE id=?2 AND workspace_id=?3`).bind(new Date().toISOString(), itemId, session.workspaceId).run()
     return new Response(object.body, { headers: { "content-type": "application/pdf", "content-disposition": `inline; filename="letter-preview-${itemId}.pdf"`, "cache-control": "private, no-store" } })
   } catch (error) { return agencyError(error) }
 }

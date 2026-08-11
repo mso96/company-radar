@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { FrankkClient } from "@/lib/agency/frankk"
+import { FrankkClient, FrankkError } from "@/lib/agency/frankk"
 import { prepareFrankkCampaign } from "@/lib/agency/frankk-dispatch"
 import { getSenderProfile, listPendingMailItems } from "@/lib/agency/mail"
 import { agencyError, getAgencyRequestContext } from "@/lib/agency/request"
@@ -16,6 +16,6 @@ export async function POST(request: Request) {
     if (!item) throw new Error("This batch has no pending letters.")
     const env = await getAgencyRuntimeEnv()
     const prepared = await prepareFrankkCampaign({ db, env, client: new FrankkClient(requireAgencyEnvValue(env.FRANKK_API_KEY, "FRANKK_API_KEY")), workspaceId: session.workspaceId, itemId: item.id, sender, storePreview: true })
-    return NextResponse.json({ itemId: item.id, campaignId: prepared.campaignId, previewUrl: `/api/app/mail/preview/${item.id}`, recipient: prepared.row.company_name, status: "preview_ready" })
-  } catch (error) { return agencyError(error) }
+    return NextResponse.json({ itemId: item.id, previewUrl: `/api/app/mail/preview/${item.id}`, recipient: prepared.row.company_name, status: "preview_ready" })
+  } catch (error) { return agencyError(new Error(error instanceof FrankkError ? "The print service could not create the preview. Please try again." : error instanceof Error ? error.message : "Unable to create the letter preview.")) }
 }

@@ -16,6 +16,8 @@ export async function getCampaignDetail(db: D1Database, workspaceId: string, cam
   const batches = allBatches.filter((batch) => batch.radarId === campaignId)
   const batchIds = new Set(batches.map((batch) => batch.id))
   const mailItems = allItems.filter((item) => batchIds.has(item.batchId))
+  const campaignBatchIds = new Set(batches.filter((batch) => batch.batchKind !== "test").map((batch) => batch.id))
+  const campaignMailItems = mailItems.filter((item) => campaignBatchIds.has(item.batchId))
   const suppressed = new Set((suppressionRows.results ?? []).map((row) => row.company_number))
   const states = stateRows.results ?? []
   const eligibility = (companyNumber: string): CampaignLeadEligibility => {
@@ -25,13 +27,13 @@ export async function getCampaignDetail(db: D1Database, workspaceId: string, cam
     return "eligible"
   }
   const leads = allLeads.filter((lead) => lead.radarId === campaignId).map((lead) => ({ ...lead, eligibility: eligibility(lead.company.companyNumber) }))
-  const totalQrScans = mailItems.reduce((sum, item) => sum + (item.qrScanCount ?? 0), 0)
+  const totalQrScans = campaignMailItems.reduce((sum, item) => sum + (item.qrScanCount ?? 0), 0)
   return {
     campaign,
     template: campaign.mailTemplateId ? await getLetterTemplate(db, workspaceId, campaign.mailTemplateId) : null,
     leads,
     batches,
     mailItems,
-    analytics: { totalQrScans, companiesScanned: mailItems.filter((item) => (item.qrScanCount ?? 0) > 0).length },
+    analytics: { totalQrScans, companiesScanned: campaignMailItems.filter((item) => (item.qrScanCount ?? 0) > 0).length },
   }
 }

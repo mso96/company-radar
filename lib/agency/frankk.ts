@@ -41,11 +41,11 @@ export class FrankkClient {
     return moneyToPence(value)
   }
 
-  async createRecipient(input: { companyName: string; address: PostalAddress; workspaceId: string; mailItemId: string; companyNumber: string; suppressionReference: string }) {
+  async createRecipient(input: { companyName: string; address: PostalAddress; workspaceId: string; mailItemId: string; companyNumber: string; suppressionReference: string; recipientKind?: "company_lead" | "manual_test" }) {
     const data = await this.json("/recipients", { method: "POST", body: {
       CompanyName: input.companyName, Address1: input.address.address1, Address2: input.address.address2 ?? "",
       City: input.address.town, CountyName: input.address.county ?? "", Postcode: input.address.postcode,
-      CountryName: "United Kingdom", CustomFields: { workspace_id: input.workspaceId, mail_item_id: input.mailItemId, company_number: input.companyNumber, suppression_reference: input.suppressionReference },
+      CountryName: "United Kingdom", CustomFields: { workspace_id: input.workspaceId, mail_item_id: input.mailItemId, company_number: input.companyNumber, suppression_reference: input.suppressionReference, recipient_kind: input.recipientKind ?? "company_lead" },
     }, mutation: true })
     return requiredString(data, ["recipientId", "id", "recipient_id"], "Frankk did not return a recipient ID.")
   }
