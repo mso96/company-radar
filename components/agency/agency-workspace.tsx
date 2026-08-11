@@ -23,7 +23,7 @@ const mergeFields = ["company_name", "company_number", "incorporation_date", "si
 const mergeFieldLabels: Record<string, string> = { company_name: "Company name", company_number: "Company number", incorporation_date: "Incorporation date", sic_codes: "SIC codes", location: "Location", registered_office_address: "Registered address", agency_name: "Agency name", service_focus: "Services", opt_out_reference: "Opt-out reference" }
 const DEFAULT_LETTER_SAMPLE = { companyName: "Example New Company Ltd", companyNumber: "12345678", incorporationDate: "23 July 2026", location: "London, EC2A 4NA", sicCodes: ["62012"] }
 const replaceMergePreview = (value: string, variables: Record<string, string>) => value.replace(/\{\{\s*([a-z_]+)\s*\}\}/gi, (_, key) => variables[key] ?? mergeFieldLabels[key] ?? "")
-const deliveryCopy = "Printed and posted via Frankk ConnectMail · scheduled for the next available Standard Mail dispatch after owner approval. Delivery times are estimates, not guaranteed."
+const deliveryCopy = "Printed and posted via Frankk ConnectMail · scheduled for the next available Second Class dispatch after owner approval. Delivery times are estimates, not guaranteed."
 const mailStatus = (item: MailItem) => item.submissionUnknownAt || item.providerStatus === "submission_unknown" ? "Needs review" : ({ pending_approval: "Preview ready", sending: "Preparing", submitted: "Scheduled", production: "Production", dispatched: "Dispatched", failed: "Failed / refunded", blocked: "Needs review" }[item.status] ?? item.status)
 
 export function AgencyWorkspace({ session, radars, leads, events, watchlist, members, templates, templateLibrary = [], segments = [], sender, batches, mailItems, creditBalance, creditPacks, creditMovements, newCompaniesLast30Days, initialView = "campaigns", checkoutStatus }: Props) {
@@ -84,7 +84,7 @@ function SenderSetup({ sender, fallbackName, fallbackEmail, onSave }: { sender: 
 
 function Empty({ text }: { text: string }) { return <p className="border-2 border-dashed p-4 text-sm text-muted-foreground">{text}</p> }
 function creditReason(reason: string) { return ({ welcome_credit: "Welcome credit", credit_purchase: "Credit purchase", mail_reservation: "Letters approved", mail_refund: "Failed send refund" } as Record<string, string>)[reason] ?? reason.replaceAll("_", " ") }
-function DeliveryNotice() { return <div className="border-2 bg-muted p-3 text-sm"><p className="font-black">Printed and posted via Frankk ConnectMail</p><p className="mt-1 text-muted-foreground">Your preview is free. After owner approval, each letter uses one credit and is scheduled for the next available Standard Mail dispatch. Delivery times are estimates, not guaranteed.</p></div> }
+function DeliveryNotice() { return <div className="border-2 bg-muted p-3 text-sm"><p className="font-black">Printed and posted via Frankk ConnectMail</p><p className="mt-1 text-muted-foreground">Your preview is free. After owner approval, each letter uses one credit and is scheduled for the next available Second Class dispatch. Delivery times are estimates, not guaranteed.</p></div> }
 
 const sicOptions = Object.entries(SIC_LABELS).map(([code, description]) => ({ code, description }))
 const sicSuggestions = ["Accounting", "Software", "Property", "Construction", "Recruitment", "Legal", "Marketing", "Retail"]

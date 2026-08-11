@@ -3,6 +3,17 @@ import type { PostalAddress } from "@/lib/agency/types"
 const BASE_URL = "https://app.frankk.post/api/v1"
 const MAX_SAFE_ATTEMPTS = 3
 
+export const FRANKK_LETTER_PRODUCT = {
+  pageSize: "A4 Letter",
+  pageOrientation: "Portrait",
+  windowGummedCode: "C5NONWINDOW",
+  stockWeightCode: "100UNCOAT",
+  mailClassCode: "Second",
+  isDuplex: false,
+  isAdmail: false,
+  isConfidential: false,
+} as const
+
 export class FrankkError extends Error {
   constructor(message: string, readonly submissionUnknown = false, readonly status?: number) {
     super(message)
@@ -42,17 +53,20 @@ export class FrankkClient {
   async createCampaign(input: { name: string; recipientId: string; pdf: ArrayBuffer }) {
     const fileName = `${input.name}.pdf`
     const data = await this.json("/campaigns", { method: "POST", body: {
-      campaign: { name: input.name, pageSize: "A4 Letter", pageOrientation: "Portrait", windowGummedCode: "C5NONWINDOW", stockWeightCode: "100UNCOAT", mailClassCode: "Standard", isDuplex: false, isAdmail: false, isConfidential: false, recipients: { type: "single", id: input.recipientId } },
+      campaign: { name: input.name, ...FRANKK_LETTER_PRODUCT, recipients: { type: "single", id: input.recipientId } },
       pdf: { fileBase64: Buffer.from(input.pdf).toString("base64"), originalName: fileName, fileName }, templateName: input.name,
     }, mutation: true })
-    return requiredString(data, ["campaignId", "id", "campaign_id"], "Frankk did not return a campaign ID.")
+    const campaignId = requiredString(data, ["campaignId", "id", "campaign_id"], "Frankk did not return a campaign ID.")
+    const status = requiredString(data, ["status", "currentStatus"], "Frankk did not return a campaign status.")
+    if (status.toLowerCase() !== "preview") throw new FrankkError(`Frankk created the campaign in ${status} state instead of Preview.`)
+    return campaignId
   }
 
   async campaignDetails(campaignId: string) { return this.json(`/campaigns/${encodeURIComponent(campaignId)}`, { method: "GET", safe: true }) }
   async preview(campaignId: string) { return this.binary(`/campaigns/${encodeURIComponent(campaignId)}/preview`) }
   async approve(campaignId: string) { return this.json(`/campaigns/approve?campaignId=${encodeURIComponent(campaignId)}`, { method: "POST", body: {}, mutation: true }) }
   async cost(campaignId: string): Promise<FrankkCost> {
-    const q = new URLSearchParams({ campaignId, stockWeight: "100UNCOAT", mailClass: "Standard", isAdMail: "false", isConfidential: "false", isDuplex: "false" })
+    const q = new URLSearchParams({ campaignId, stockWeight: FRANKK_LETTER_PRODUCT.stockWeightCode, mailClass: FRANKK_LETTER_PRODUCT.mailClassCode, isAdMail: String(FRANKK_LETTER_PRODUCT.isAdmail), isConfidential: String(FRANKK_LETTER_PRODUCT.isConfidential), isDuplex: String(FRANKK_LETTER_PRODUCT.isDuplex) })
     const data = await this.json(`/campaigns/cost?${q}`, { method: "POST", body: {}, safe: true })
     const currency = stringFrom(data, ["currencyCode", "currency"])?.toUpperCase()
     const per = numberFrom(data, ["costPerRecipient"]); const subtotal = numberFrom(data, ["subtotal"]); const vat = numberFrom(data, ["vatAmount", "vat"]); const total = numberFrom(data, ["totalCost", "total"])
@@ -67,7 +81,7 @@ export class FrankkClient {
     return dates.sort()[0]
   }
   async schedule(campaignId: string, sendDate: string) {
-    const q = new URLSearchParams({ campaignId, send_date: sendDate, next_available_date: "true", use_balance: "true" })
+    const q = new URLSearchParams({ campaignId, send_date: sendDate, next_available_date: "false", use_balance: "true" })
     const data = await this.json(`/campaigns/schedule?${q}`, { method: "POST", body: {}, mutation: true })
     const paymentStatus = stringFrom(data, ["paymentStatus", "payment_status"])
     const returnedId = stringFrom(data, ["campaignId", "campaign_id", "id"])

@@ -28,7 +28,7 @@ export async function prepareFrankkCampaign(input: { db: D1Database; env: Agency
   const pdf = await renderA4Pdf(env.BROWSER, html)
   const recipientId = await client.createRecipient({ companyName: row.company_name, address, workspaceId, mailItemId: itemId, companyNumber: row.company_number, suppressionReference: row.suppression_reference })
   const campaignId = await client.createCampaign({ name: `CR-${itemId}-${hash}`, recipientId, pdf })
-  await updateFrankkMailItem(db, itemId, { status: "pending_approval", address, html, recipientId, campaignId, renderHash: hash, providerStatus: "Preview" })
+  await updateFrankkMailItem(db, workspaceId, itemId, { status: "pending_approval", address, html, recipientId, campaignId, renderHash: hash, providerStatus: "Preview" })
   if (input.storePreview) return storeCampaignPreview({ db, env, client, workspaceId, itemId, campaignId, hash, address, html, row, recipientId })
   return { row, address, html, hash, recipientId, campaignId, previewKey: undefined }
 }
@@ -38,7 +38,7 @@ async function storeCampaignPreview(input: { db: D1Database; env: AgencyRuntimeE
   const pdf = await input.client.preview(input.campaignId)
   const key = `mail-previews/${input.workspaceId}/${input.itemId}/${input.hash}.pdf`
   await input.env.AGENCY_ASSETS.put(key, pdf, { httpMetadata: { contentType: "application/pdf" }, customMetadata: { workspaceId: input.workspaceId, mailItemId: input.itemId, renderHash: input.hash } })
-  await updateFrankkMailItem(input.db, input.itemId, { status: "pending_approval", previewKey: key, providerStatus: "Preview ready", previewed: true })
+  await updateFrankkMailItem(input.db, input.workspaceId, input.itemId, { status: "pending_approval", previewKey: key, providerStatus: "Preview ready", previewed: true })
   const row = input.row ?? await getMailItemForDispatch(input.db, input.workspaceId, input.itemId)
   return { row: row!, address: input.address, html: input.html, hash: input.hash, recipientId: input.recipientId, campaignId: input.campaignId, previewKey: key }
 }
