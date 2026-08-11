@@ -179,7 +179,9 @@ export function renderLetter(row: DispatchRow, sender: SenderProfile, address: P
   const replace = (value: string | null | undefined) => (value ?? "").replace(/\{\{\s*([a-z_]+)\s*\}\}/gi, (_, key) => escapeHtml(variables[key] ?? ""))
   const logoUrl = normalizeExternalUrl(sender.logoUrl)
   const website = normalizeExternalUrl(sender.website)
-  const logo = logoUrl ? `<img src="${escapeAttr(logoUrl)}" alt="${escapeAttr(sender.agencyName)}" style="max-height:48px;max-width:180px" />` : `<strong>${escapeHtml(sender.agencyName)}</strong>`
+  const logo = logoUrl
+    ? `<img src="${escapeAttr(logoUrl)}" alt="" style="max-height:48px;max-width:180px" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'" /><strong style="display:none">${escapeHtml(sender.agencyName)}</strong>`
+    : `<strong>${escapeHtml(sender.agencyName)}</strong>`
   const accent = normalizeAccentColor(sender.accentColor)
   const primary = normalizeAccentColor(sender.primaryColor ?? "#111827")
   const text = normalizeAccentColor(sender.textColor ?? "#111827")
