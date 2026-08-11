@@ -45,6 +45,10 @@ export interface AgencyRadar {
   activatedAt?: string | null
   pausedAt?: string | null
   createdAt: string
+  lastScanStartedAt?: string | null
+  lastScanCompletedAt?: string | null
+  lastScanLeads?: number
+  lastScanError?: string | null
 }
 
 export interface AgencySegment {
@@ -61,6 +65,8 @@ export interface AgencySegment {
   isActive: boolean
 }
 
+export type LetterDesignPreset = "minimal" | "modern" | "editorial" | "bold" | "professional" | "premium"
+export interface LetterDesign { preset: LetterDesignPreset }
 export interface AgencyTemplateLibraryItem {
   id: string
   segmentSlug: string
@@ -76,6 +82,7 @@ export interface AgencyTemplateLibraryItem {
   currency: string
   version: string
   serviceFocus?: string[]
+  layout?: LetterLayout
 }
 
 export interface AgencyLead {
@@ -141,12 +148,22 @@ export interface CreateRadarInput {
 }
 
 export type LetterBlockType = "brand" | "recipient" | "heading" | "paragraph" | "list" | "image" | "cta" | "qr" | "signature" | "divider" | "spacer" | "footer"
-export interface LetterBlock { id: string; type: LetterBlockType; content?: string; items?: string[]; url?: string; alt?: string; align?: "left" | "center" | "right" }
-export interface LetterLayout { version: 1; blocks: LetterBlock[] }
+export interface LetterBlock { id: string; type: LetterBlockType; content?: string; items?: string[]; url?: string; alt?: string; align?: "left" | "center" | "right"; size?: "small" | "medium" | "large" }
+export interface LetterLayout { version: 1; design?: LetterDesign; blocks: LetterBlock[] }
 export interface SenderProfile { agencyName: string; address: PostalAddress; replyEmail: string; website?: string; optOutText: string; logoUrl?: string; accentColor?: string; primaryColor?: string; textColor?: string; fontFamily?: string; headerAlignment?: "left" | "center" | "right" }
 export interface PostalAddress { address1: string; address2?: string; town: string; county?: string; postcode: string; country: string }
-export interface LetterTemplate { id: string; workspaceId: string; name: string; subject: string; bodyHtml: string; ctaText?: string; ctaUrl?: string; signature: string; isDefault: boolean; createdAt: string; sourceTemplateId?: string | null; segmentSlug?: string | null; templateVersion?: string; isPlatformTemplate?: boolean; pricingVersion?: string; pricePence?: number; currency?: string; serviceFocus?: string[]; layout?: LetterLayout }
+export interface LetterTemplate { id: string; workspaceId: string; name: string; subject: string; bodyHtml: string; ctaText?: string; ctaUrl?: string; signature: string; isDefault: boolean; createdAt: string; sourceTemplateId?: string | null; segmentSlug?: string | null; templateVersion?: string; isPlatformTemplate?: boolean; isCampaignSnapshot?: boolean; pricingVersion?: string; pricePence?: number; currency?: string; serviceFocus?: string[]; layout?: LetterLayout }
 export interface CreditPack { id: string; name: string; credits: number; pricePence: number; stripePriceId?: string; active: boolean }
 export interface CreditMovement { id: string; delta: number; reason: string; createdAt: string }
-export interface MailBatch { id: string; name: string; templateId: string; status: string; creditReserved: number; createdAt: string }
-export interface MailItem { id: string; batchId: string; companyNumber: string; companyName: string; status: string; provider?: string | null; providerStatus?: string | null; providerCampaignId?: string | null; providerPdfUrl?: string | null; scheduledAt?: string | null; submissionUnknownAt?: string | null; lastError?: string | null; createdAt: string; customerPricePence?: number | null; currency?: string; marginPence?: number | null }
+export interface MailBatch { id: string; name: string; templateId: string; radarId?: string | null; status: string; creditReserved: number; createdAt: string }
+export interface MailItem { id: string; batchId: string; companyNumber: string; companyName: string; status: string; provider?: string | null; providerStatus?: string | null; providerCampaignId?: string | null; providerPdfUrl?: string | null; scheduledAt?: string | null; submissionUnknownAt?: string | null; lastError?: string | null; createdAt: string; customerPricePence?: number | null; currency?: string; marginPence?: number | null; qrScanCount?: number; qrFirstScannedAt?: string | null; qrLastScannedAt?: string | null }
+export type CampaignLeadEligibility = "eligible" | "in_batch" | "sent" | "suppressed"
+export interface CampaignLead extends AgencyLead { eligibility: CampaignLeadEligibility }
+export interface CampaignDetail {
+  campaign: AgencyRadar
+  template: LetterTemplate | null
+  leads: CampaignLead[]
+  batches: MailBatch[]
+  mailItems: MailItem[]
+  analytics: { totalQrScans: number; companiesScanned: number }
+}

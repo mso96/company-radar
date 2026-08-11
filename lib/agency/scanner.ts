@@ -5,11 +5,15 @@ import { autoQueueLead } from "@/lib/agency/mail"
 import type { AgencyRadar, AgencySession } from "@/lib/agency/types"
 import type { CompanyRecord } from "@/lib/types"
 
-export async function scanWorkspaceRadars(db: D1Database, apiKey: string, session: AgencySession) {
-  const radars = (await listRadars(db, session.workspaceId)).filter((radar) => radar.isActive)
+export async function scanWorkspaceRadars(db: D1Database, apiKey: string, session: AgencySession, onlyRadarId?: string) {
+  const radars = (await listRadars(db, session.workspaceId)).filter((radar) => radar.isActive && (!onlyRadarId || radar.id === onlyRadarId))
   const today = new Date().toISOString().slice(0, 10)
   let leads = 0
   for (const radar of radars) {
+    const startedAt = new Date().toISOString()
+    await db.prepare(`UPDATE agency_radars SET last_scan_started_at=?1,last_scan_error=NULL WHERE id=?2 AND workspace_id=?3`).bind(startedAt,radar.id,session.workspaceId).run()
+    let radarLeads = 0
+    try {
     const companies = new Map<string, CompanyRecord>()
     for (const sicCode of radar.sicCodes) {
       for (const company of await fetchCompaniesForSicAlerts(apiKey, today, today, sicCode)) companies.set(company.companyNumber, company)
@@ -21,8 +25,14 @@ export async function scanWorkspaceRadars(db: D1Database, apiKey: string, sessio
       const leadId = await upsertLead(db, { workspaceId: session.workspaceId, radar, company, matchReasons: reasons, score })
       if (!leadId) continue
       leads += 1
+      radarLeads += 1
       await autoQueueLead(db, { workspaceId: session.workspaceId, radarId: radar.id, leadId, companyNumber: company.companyNumber, companyName: company.companyName })
       await queueWebhookDelivery(db, radar.id, "lead.created", { version: "2026-07-13", type: "lead.created", workspaceId: session.workspaceId, radar: { id: radar.id, name: radar.name }, lead: { id: leadId, score, matchReasons: reasons, company: companyPayload(company) }, occurredAt: new Date().toISOString() })
+    }
+    await db.prepare(`UPDATE agency_radars SET last_scan_completed_at=?1,last_scan_leads=?2,last_scan_error=NULL WHERE id=?3 AND workspace_id=?4`).bind(new Date().toISOString(),radarLeads,radar.id,session.workspaceId).run()
+    } catch (error) {
+      await db.prepare(`UPDATE agency_radars SET last_scan_completed_at=?1,last_scan_error=?2 WHERE id=?3 AND workspace_id=?4`).bind(new Date().toISOString(),error instanceof Error ? error.message.slice(0,500) : "Scan failed",radar.id,session.workspaceId).run()
+      if (onlyRadarId) throw error
     }
   }
   return { radars: radars.length, leads }

@@ -2,6 +2,7 @@ import type { AgencyLead, CreditMovement, CreditPack, LetterLayout, LetterTempla
 import { FrankkClient } from "@/lib/agency/frankk"
 import { normalizeAccentColor, normalizeExternalUrl } from "@/lib/agency/branding"
 import { normalizeLetterLayout } from "@/lib/agency/letter-layout"
+import { qrSvgDataUrl } from "@/lib/agency/qr"
 
 const now = () => new Date().toISOString()
 const json = <T>(value: string | null | undefined, fallback: T) => { try { return value ? JSON.parse(value) as T : fallback } catch { return fallback } }
@@ -35,6 +36,16 @@ export async function getSenderProfile(db: D1Database, workspaceId: string): Pro
   return row ? { agencyName: row.agency_name, address: json<PostalAddress>(row.address_json, emptyAddress()), replyEmail: row.reply_email, website: normalizeExternalUrl(row.website), optOutText: row.opt_out_text, logoUrl: normalizeExternalUrl(row.logo_url), accentColor: normalizeAccentColor(row.accent_color), primaryColor: normalizeAccentColor(row.primary_color ?? "#111827"), textColor: normalizeAccentColor(row.text_color ?? "#111827"), fontFamily: normalizeFont(row.font_family), headerAlignment: row.header_alignment ?? "left" } : null
 }
 
+export function senderReadiness(sender: SenderProfile | null) {
+  const missing: string[] = []
+  if (!sender?.agencyName.trim()) missing.push("business name")
+  if (!sender?.replyEmail.trim()) missing.push("reply email")
+  if (!sender?.address.address1.trim() || !sender.address.town.trim() || !sender.address.postcode.trim()) missing.push("UK postal address")
+  if (!sender?.website?.trim()) missing.push("website / CTA address")
+  if (!sender?.optOutText.trim()) missing.push("opt-out text")
+  return { ready: missing.length === 0, missing }
+}
+
 export async function saveSenderProfile(db: D1Database, workspaceId: string, input: SenderProfile) {
   if (!input.agencyName.trim() || !input.replyEmail.trim() || !input.address.address1.trim() || !input.address.town.trim() || !input.address.postcode.trim()) throw new Error("Complete your sender name, reply email and postal address.")
   const accentColor = normalizeAccentColor(input.accentColor)
@@ -44,8 +55,26 @@ export async function saveSenderProfile(db: D1Database, workspaceId: string, inp
 }
 
 export async function listLetterTemplates(db: D1Database, workspaceId: string): Promise<LetterTemplate[]> {
-  const rows = await db.prepare(`SELECT t.*, l.price_pence, l.currency FROM agency_letter_templates t LEFT JOIN agency_template_library l ON l.id = t.source_template_id WHERE t.workspace_id = ?1 ORDER BY t.is_default DESC, t.created_at DESC`).bind(workspaceId).all<TemplateRow>()
+  const rows = await db.prepare(`SELECT t.*, l.price_pence, l.currency FROM agency_letter_templates t LEFT JOIN agency_template_library l ON l.id = t.source_template_id WHERE t.workspace_id = ?1 AND t.archived_at IS NULL AND COALESCE(t.is_campaign_snapshot,0)=0 ORDER BY t.is_default DESC, t.created_at DESC`).bind(workspaceId).all<TemplateRow>()
   return (rows.results ?? []).map(mapTemplate)
+}
+
+export async function getLetterTemplate(db: D1Database, workspaceId: string, templateId: string): Promise<LetterTemplate | null> {
+  const row = await db.prepare(`SELECT t.*, l.price_pence, l.currency FROM agency_letter_templates t LEFT JOIN agency_template_library l ON l.id=t.source_template_id WHERE t.id=?1 AND t.workspace_id=?2`).bind(templateId, workspaceId).first<TemplateRow>()
+  return row ? mapTemplate(row) : null
+}
+
+export async function archiveLetterTemplate(db: D1Database, workspaceId: string, templateId: string) {
+  const result = await db.prepare(`UPDATE agency_letter_templates SET archived_at=?1,updated_at=?1,is_default=0 WHERE id=?2 AND workspace_id=?3 AND archived_at IS NULL AND COALESCE(is_campaign_snapshot,0)=0 AND COALESCE(is_platform_template,0)=0`).bind(now(), templateId, workspaceId).run() as { meta?: { changes?: number }; changes?: number }
+  if (Number(result.meta?.changes ?? result.changes ?? 0) !== 1) throw new Error("This template could not be removed.")
+}
+
+export async function createCampaignTemplateSnapshot(db: D1Database, workspaceId: string, templateId: string, campaignName: string) {
+  const source = await db.prepare(`SELECT * FROM agency_letter_templates WHERE id=?1 AND workspace_id=?2 AND COALESCE(is_campaign_snapshot,0)=0`).bind(templateId, workspaceId).first<TemplateRow>()
+  if (!source) throw new Error("Choose a saved letter template from this workspace.")
+  const id = crypto.randomUUID(); const timestamp = now()
+  await db.prepare(`INSERT INTO agency_letter_templates (id,workspace_id,name,subject,body_html,cta_text,cta_url,signature,is_default,created_at,updated_at,source_template_id,segment_slug,template_version,is_platform_template,pricing_version,service_focus_json,layout_json,is_campaign_snapshot) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,0,?9,?9,?10,?11,?12,0,?13,?14,?15,1)`).bind(id, workspaceId, `${campaignName.trim() || "Campaign"} · snapshot`, source.subject, source.body_html, source.cta_text, source.cta_url, source.signature, timestamp, source.id, source.segment_slug, source.template_version, source.pricing_version, source.service_focus_json ?? "[]", source.layout_json).run()
+  return id
 }
 
 export async function saveLetterTemplate(db: D1Database, workspaceId: string, input: Omit<LetterTemplate, "id" | "workspaceId" | "createdAt"> & { id?: string }) {
@@ -59,26 +88,40 @@ export async function saveLetterTemplate(db: D1Database, workspaceId: string, in
 }
 
 export async function listMailBatches(db: D1Database, workspaceId: string): Promise<MailBatch[]> {
-  const rows = await db.prepare(`SELECT id, name, template_id, status, credit_reserved, created_at FROM agency_mail_batches WHERE workspace_id = ?1 ORDER BY created_at DESC LIMIT 50`).bind(workspaceId).all<BatchRow>()
-  return (rows.results ?? []).map((row) => ({ id: row.id, name: row.name, templateId: row.template_id, status: row.status, creditReserved: row.credit_reserved, createdAt: row.created_at }))
+  const rows = await db.prepare(`SELECT id, name, template_id, radar_id, status, credit_reserved, created_at FROM agency_mail_batches WHERE workspace_id = ?1 ORDER BY created_at DESC LIMIT 100`).bind(workspaceId).all<BatchRow>()
+  return (rows.results ?? []).map((row) => ({ id: row.id, name: row.name, templateId: row.template_id, radarId: row.radar_id, status: row.status, creditReserved: row.credit_reserved, createdAt: row.created_at }))
 }
 
 export async function listMailItems(db: D1Database, workspaceId: string): Promise<MailItem[]> {
-  const rows = await db.prepare(`SELECT id, batch_id, company_number, company_name, status, provider, provider_status, provider_campaign_id, provider_pdf_url, scheduled_at, submission_unknown_at, last_error, created_at FROM agency_mail_items WHERE workspace_id = ?1 ORDER BY created_at DESC LIMIT 100`).bind(workspaceId).all<ItemRow>()
-  return (rows.results ?? []).map((row) => ({ id: row.id, batchId: row.batch_id, companyNumber: row.company_number, companyName: row.company_name, status: row.status, provider: row.provider, providerStatus: row.provider_status, providerCampaignId: row.provider_campaign_id, providerPdfUrl: row.provider_pdf_url, scheduledAt: row.scheduled_at, submissionUnknownAt: row.submission_unknown_at, lastError: row.last_error, createdAt: row.created_at }))
+  const rows = await db.prepare(`SELECT id, batch_id, company_number, company_name, status, provider, provider_status, provider_campaign_id, provider_pdf_url, scheduled_at, submission_unknown_at, last_error, created_at, qr_scan_count, qr_first_scanned_at, qr_last_scanned_at FROM agency_mail_items WHERE workspace_id = ?1 ORDER BY created_at DESC LIMIT 200`).bind(workspaceId).all<ItemRow>()
+  return (rows.results ?? []).map((row) => ({ id: row.id, batchId: row.batch_id, companyNumber: row.company_number, companyName: row.company_name, status: row.status, provider: row.provider, providerStatus: row.provider_status, providerCampaignId: row.provider_campaign_id, providerPdfUrl: row.provider_pdf_url, scheduledAt: row.scheduled_at, submissionUnknownAt: row.submission_unknown_at, lastError: row.last_error, createdAt: row.created_at, qrScanCount: row.qr_scan_count ?? 0, qrFirstScannedAt: row.qr_first_scanned_at, qrLastScannedAt: row.qr_last_scanned_at }))
 }
 
-export async function createMailBatchFromLeads(db: D1Database, input: { workspaceId: string; userId: string; templateId: string; leadIds: string[]; name?: string }) {
+export async function createMailBatchFromLeads(db: D1Database, input: { workspaceId: string; userId: string; templateId: string; leadIds: string[]; name?: string; radarId?: string }) {
   const template = await db.prepare(`SELECT id FROM agency_letter_templates WHERE id = ?1 AND workspace_id = ?2`).bind(input.templateId, input.workspaceId).first()
   if (!template) throw new Error("Choose a letter template from this workspace.")
-  const ids = Array.from(new Set(input.leadIds.filter(Boolean))).slice(0, 100)
+  const ids = Array.from(new Set(input.leadIds.filter(Boolean)))
   if (!ids.length) throw new Error("Select at least one lead.")
+  if (ids.length > 20) throw new Error("A pilot batch can contain at most 20 letters.")
   const placeholders = ids.map(() => "?").join(",")
-  const leads = await db.prepare(`SELECT id, company_number, company_name FROM agency_leads WHERE workspace_id = ?1 AND id IN (${placeholders})`).bind(input.workspaceId, ...ids).all<{ id: string; company_number: string; company_name: string }>()
+  const leads = await db.prepare(`SELECT id, radar_id, company_number, company_name FROM agency_leads WHERE workspace_id = ?1 AND id IN (${placeholders})`).bind(input.workspaceId, ...ids).all<{ id: string; radar_id: string; company_number: string; company_name: string }>()
   if (!(leads.results ?? []).length) throw new Error("Selected leads are no longer available.")
   const id = crypto.randomUUID(); const timestamp = now()
-  const statements = [db.prepare(`INSERT INTO agency_mail_batches (id, workspace_id, template_id, name, status, created_by_user_id, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, 'pending_approval', ?5, ?6, ?6)`).bind(id, input.workspaceId, input.templateId, input.name?.trim() || `New company outreach — ${new Date().toLocaleDateString("en-GB")}`, input.userId, timestamp)]
-  for (const lead of leads.results ?? []) statements.push(db.prepare(`INSERT INTO agency_mail_items (id, workspace_id, batch_id, lead_id, company_number, company_name, status, suppression_reference, idempotency_key, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, 'pending_approval', ?7, ?8, ?9, ?9) ON CONFLICT(batch_id, company_number) DO NOTHING`).bind(crypto.randomUUID(), input.workspaceId, id, lead.id, lead.company_number, lead.company_name, shortRef(), crypto.randomUUID(), timestamp))
+  const radarId = input.radarId ?? leads.results?.[0]?.radar_id
+  if (!radarId || (leads.results ?? []).some((lead) => lead.radar_id !== radarId)) throw new Error("Create a batch from one campaign at a time.")
+  const companyNumbers = (leads.results ?? []).map((lead) => lead.company_number)
+  const companyPlaceholders = companyNumbers.map(() => "?").join(",")
+  const blocked = await db.prepare(`SELECT company_number, reason FROM (
+    SELECT company_number, 'suppressed' AS reason FROM agency_suppressions WHERE workspace_id=?1 AND company_number IN (${companyPlaceholders})
+    UNION ALL
+    SELECT company_number, 'already sent' AS reason FROM agency_mail_items WHERE workspace_id=?1 AND company_number IN (${companyPlaceholders}) AND status IN ('submitted','production','dispatched')
+    UNION ALL
+    SELECT i.company_number, 'already in a batch' AS reason FROM agency_mail_items i JOIN agency_mail_batches b ON b.id=i.batch_id WHERE i.workspace_id=?1 AND b.radar_id=?2 AND i.company_number IN (${companyPlaceholders}) AND i.status IN ('draft','pending_approval','sending')
+  ) LIMIT 1`).bind(input.workspaceId, ...companyNumbers, ...companyNumbers, radarId, ...companyNumbers).first<{ company_number: string; reason: string }>()
+  if (blocked) throw new Error(`${blocked.company_number} is ${blocked.reason} and cannot be added.`)
+  const target = qrTarget(json<LetterLayout | null>((await db.prepare(`SELECT layout_json FROM agency_letter_templates WHERE id=?1`).bind(input.templateId).first<{layout_json:string|null}>())?.layout_json, null))
+  const statements = [db.prepare(`INSERT INTO agency_mail_batches (id, workspace_id, template_id, radar_id, name, status, created_by_user_id, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, 'pending_approval', ?6, ?7, ?7)`).bind(id, input.workspaceId, input.templateId, radarId, input.name?.trim() || `New company outreach — ${new Date().toLocaleDateString("en-GB")}`, input.userId, timestamp)]
+  for (const lead of leads.results ?? []) statements.push(db.prepare(`INSERT INTO agency_mail_items (id, workspace_id, batch_id, lead_id, company_number, company_name, status, suppression_reference, idempotency_key, qr_target_url, qr_tracking_token, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, 'pending_approval', ?7, ?8, ?9, ?10, ?11, ?11) ON CONFLICT(batch_id, company_number) DO NOTHING`).bind(crypto.randomUUID(), input.workspaceId, id, lead.id, lead.company_number, lead.company_name, shortRef(), crypto.randomUUID(), target, target ? secureToken() : null, timestamp))
   await db.batch(statements)
   return id
 }
@@ -125,24 +168,27 @@ export function renderLetter(row: DispatchRow, sender: SenderProfile, address: P
   const ctaUrl = normalizeExternalUrl(row.cta_url)
   const websiteLine = website ? ` · ${escapeHtml(website)}` : ""
   const layout = normalizeLetterLayout(json<LetterLayout | null>(row.layout_json, null), { subject: row.subject, bodyHtml: row.body_html, ctaText: row.cta_text ?? undefined, ctaUrl: row.cta_url ?? undefined, signature: row.signature })
-  const renderBlock = (item: LetterLayout["blocks"][number]) => {
+  const design = printDesign(layout.design?.preset ?? "minimal", accent, primary, font)
+  const renderBlock = (item: LetterLayout["blocks"][number], compact = false) => {
     const align = normalizeAlignment(item.align)
     const content = replace(item.content)
     if (item.type === "brand") return `<div style="text-align:${align};margin-bottom:24px">${logo}</div>`
     if (item.type === "recipient") return `<div style="margin:0 0 24px"><strong>To:</strong><br>${escapeHtml(row.company_name)}<br>${escapeHtml(addressLines(address))}</div>`
     if (item.type === "heading") return `<h2 style="color:${primary};text-align:${align};margin:0 0 18px">${content}</h2>`
     if (item.type === "paragraph") return `<p style="text-align:${align};margin:0 0 12px;line-height:1.55">${content}</p>`
-    if (item.type === "list") return `<ul style="margin:0 0 14px;padding-left:22px">${(item.items?.length ? item.items : [item.content ?? ""]).map((entry) => `<li>${replace(entry)}</li>`).join("")}</ul>`
+    if (item.type === "list") { const entries = item.content?.trim() === "{{service_focus}}" || item.items?.some((entry) => entry.trim() === "{{service_focus}}") ? services : (item.items?.length ? item.items : [item.content ?? ""]); return `<ul style="margin:0 0 14px;padding-left:22px">${entries.filter(Boolean).map((entry) => `<li>${replace(entry)}</li>`).join("")}</ul>` }
     if (item.type === "image") { const url = normalizeExternalUrl(item.url); return url ? `<p style="text-align:${align}"><img src="${escapeAttr(url)}" alt="${escapeAttr(item.alt ?? "")}" style="max-width:100%;max-height:240px" /></p>` : "" }
-    if (item.type === "cta") { const url = normalizeExternalUrl(item.url ?? row.cta_url); return content && url ? `<p style="text-align:${align};margin:18px 0"><a href="${escapeAttr(url)}" style="display:inline-block;background:${accent};color:#000;padding:10px 14px;text-decoration:none;font-weight:700">${content}</a></p>` : "" }
-    if (item.type === "qr") { const url = normalizeExternalUrl(item.url ?? row.cta_url); return url ? `<div style="text-align:${align};margin:18px 0"><img src="https://quickchart.io/qr?size=180&text=${encodeURIComponent(url)}" alt="QR code" width="120" height="120" /><div style="font-size:11px">${escapeHtml(url)}</div></div>` : "" }
+    if (item.type === "cta") { const url = normalizeExternalUrl(item.url ?? row.cta_url); return content && url ? `<p style="text-align:${align};margin:${compact ? 0 : 18}px 0"><a href="${escapeAttr(url)}" style="display:block;background:${accent};color:#000;padding:13px 16px;text-align:center;text-decoration:none;font-weight:700">${content}</a></p>` : "" }
+    if (item.type === "qr") { const direct = normalizeExternalUrl(item.url ?? row.cta_url); const url = row.qr_tracking_token && direct ? `https://companyradar.uk/r/${row.qr_tracking_token}` : direct; const px = item.size === "large" ? 112 : item.size === "medium" ? 96 : 80; return url ? `<div style="text-align:center;margin:${compact ? 0 : 18}px 0"><img src="${qrSvgDataUrl(url, primary)}" alt="QR code" width="${px}" height="${px}" style="display:inline-block" />${item.content ? `<div style="font-size:10px;line-height:1.2">${content}</div>` : ""}</div>` : "" }
     if (item.type === "signature") return `<p style="text-align:${align};margin:22px 0;font-weight:700">${content || replace(row.signature)}</p>`
     if (item.type === "divider") return `<hr style="border:0;border-top:1px solid ${primary};margin:18px 0">`
     if (item.type === "spacer") return `<div style="height:24px"></div>`
     if (item.type === "footer") return `<footer style="margin-top:22px;border-top:1px solid ${primary};padding-top:10px;font-size:10px;color:${text}">${escapeHtml(sender.agencyName)}${websiteLine} · ${escapeHtml(sender.replyEmail)} · ${escapeHtml(sender.optOutText)} Reference: ${escapeHtml(row.suppression_reference)}</footer>`
     return ""
   }
-  return `<article style="box-sizing:border-box;font-family:${escapeAttr(font)},Arial,sans-serif;color:${text};border-top:8px solid ${accent};padding:28px;max-width:794px;min-height:1123px">${layout.blocks.map(renderBlock).join("")}</article>`
+  const rendered: string[] = []
+  for (let index = 0; index < layout.blocks.length; index += 1) { const item = layout.blocks[index]; const next = layout.blocks[index + 1]; if (item.type === "cta" && next?.type === "qr") { rendered.push(`<div style="display:flex;align-items:center;justify-content:space-between;gap:20px;margin:16px 0;padding:14px;border:1px solid ${primary};background:${accent}12"><div style="flex:1">${renderBlock(item, true)}</div><div style="flex:0 0 120px">${renderBlock(next, true)}</div></div>`); index += 1 } else rendered.push(renderBlock(item)) }
+  return `<article style="box-sizing:border-box;color:${text};max-width:794px;min-height:1123px;position:relative;overflow:hidden;${design}">${printDecor(layout.design?.preset ?? "minimal", accent, primary)}<div style="position:relative;z-index:1">${rendered.join("")}</div></article>`
 }
 export function emptyAddress(): PostalAddress { return { address1: "", town: "", postcode: "", country: "GB" } }
 function addressLines(address: PostalAddress) { return [address.address1, address.address2, address.town, address.county, address.postcode, address.country].filter(Boolean).join(", ") }
@@ -152,8 +198,17 @@ function escapeAttr(value: string) { return escapeHtml(value) }
 function normalizeFont(value: string | null | undefined) { return ["Arial", "Georgia", "Helvetica", "Times New Roman"].includes(value ?? "") ? value! : "Arial" }
 function normalizeAlignment(value: string | null | undefined): "left" | "center" | "right" { return value === "center" || value === "right" ? value : "left" }
 function normalizeProviderStatus(value: string) { const normalized = value.toLowerCase(); if (normalized.includes("dispatch")) return "dispatched"; if (normalized.includes("production") || normalized.includes("process")) return "production"; if (normalized.includes("fail") || normalized.includes("cancel")) return "failed"; return "submitted" }
-interface TemplateRow { id: string; workspace_id: string; name: string; subject: string; body_html: string; cta_text: string | null; cta_url: string | null; signature: string; is_default: number; created_at: string; source_template_id: string | null; segment_slug: string | null; template_version: string; is_platform_template: number; pricing_version: string; price_pence: number | null; currency: string | null; service_focus_json?: string; layout_json?: string | null }
-interface BatchRow { id: string; name: string; template_id: string; status: string; credit_reserved: number; created_at: string }
-interface ItemRow { id: string; batch_id: string; company_number: string; company_name: string; status: string; provider: string | null; provider_status: string | null; provider_campaign_id: string | null; provider_pdf_url: string | null; scheduled_at: string | null; submission_unknown_at: string | null; last_error: string | null; created_at: string }
-export interface DispatchRow { id: string; company_number: string; company_name: string; suppression_reference: string; idempotency_key: string; subject: string; body_html: string; cta_text: string | null; cta_url: string | null; signature: string; layout_json?: string | null; service_focus_json?: string | null; radar_service_focus_json?: string | null; incorporation_date?: string | null; sic_codes_json?: string | null; location?: string | null }
-function mapTemplate(row: TemplateRow): LetterTemplate { return { id: row.id, workspaceId: row.workspace_id, name: row.name, subject: row.subject, bodyHtml: row.body_html, ctaText: row.cta_text ?? undefined, ctaUrl: row.cta_url ?? undefined, signature: row.signature, isDefault: Boolean(row.is_default), createdAt: row.created_at, sourceTemplateId: row.source_template_id, segmentSlug: row.segment_slug, templateVersion: row.template_version, isPlatformTemplate: Boolean(row.is_platform_template), pricingVersion: row.pricing_version, pricePence: row.price_pence ?? undefined, currency: row.currency ?? "GBP", serviceFocus: json<string[]>(row.service_focus_json, []), layout: normalizeLetterLayout(json<LetterLayout | null>(row.layout_json, null), { subject: row.subject, bodyHtml: row.body_html, ctaText: row.cta_text ?? undefined, ctaUrl: row.cta_url ?? undefined, signature: row.signature }) } }
+function printDesign(preset: string, _accent: string, _primary: string, font: string) { if (preset === "modern") return `font-family:Helvetica,Arial,sans-serif;padding:90px 72px;`; if (preset === "editorial") return `font-family:Georgia,serif;padding:124px 72px 90px;`; return `font-family:${escapeAttr(font)},Arial,sans-serif;padding:90px 72px;` }
+function printDecor(preset: string, accent: string, primary: string) {
+  const span = (style: string) => `<span aria-hidden="true" style="position:absolute;display:block;z-index:0;pointer-events:none;${style}"></span>`
+  if (preset === "modern") return [span(`left:0;right:0;top:0;height:12px;background:${accent}`), span(`left:64px;right:64px;bottom:45px;height:1px;background:${primary}`)].join("")
+  if (preset === "editorial") return [span(`left:64px;right:64px;top:94px;height:1px;background:${accent}`), span(`left:64px;right:64px;bottom:45px;height:1px;background:${accent}`)].join("")
+  return [span(`left:0;top:0;bottom:0;width:8px;background:${accent}`), span(`right:64px;top:58px;width:176px;height:1px;background:${primary}`)].join("")
+}
+interface TemplateRow { id: string; workspace_id: string; name: string; subject: string; body_html: string; cta_text: string | null; cta_url: string | null; signature: string; is_default: number; created_at: string; source_template_id: string | null; segment_slug: string | null; template_version: string; is_platform_template: number; is_campaign_snapshot?: number; pricing_version: string; price_pence: number | null; currency: string | null; service_focus_json?: string; layout_json?: string | null }
+interface BatchRow { id: string; name: string; template_id: string; radar_id: string | null; status: string; credit_reserved: number; created_at: string }
+interface ItemRow { id: string; batch_id: string; company_number: string; company_name: string; status: string; provider: string | null; provider_status: string | null; provider_campaign_id: string | null; provider_pdf_url: string | null; scheduled_at: string | null; submission_unknown_at: string | null; last_error: string | null; created_at: string; qr_scan_count?: number; qr_first_scanned_at?: string | null; qr_last_scanned_at?: string | null }
+export interface DispatchRow { id: string; company_number: string; company_name: string; suppression_reference: string; idempotency_key: string; qr_tracking_token?: string | null; subject: string; body_html: string; cta_text: string | null; cta_url: string | null; signature: string; layout_json?: string | null; service_focus_json?: string | null; radar_service_focus_json?: string | null; incorporation_date?: string | null; sic_codes_json?: string | null; location?: string | null }
+function mapTemplate(row: TemplateRow): LetterTemplate { return { id: row.id, workspaceId: row.workspace_id, name: row.name, subject: row.subject, bodyHtml: row.body_html, ctaText: row.cta_text ?? undefined, ctaUrl: row.cta_url ?? undefined, signature: row.signature, isDefault: Boolean(row.is_default), createdAt: row.created_at, sourceTemplateId: row.source_template_id, segmentSlug: row.segment_slug, templateVersion: row.template_version, isPlatformTemplate: Boolean(row.is_platform_template), isCampaignSnapshot: Boolean(row.is_campaign_snapshot), pricingVersion: row.pricing_version, pricePence: row.price_pence ?? undefined, currency: row.currency ?? "GBP", serviceFocus: json<string[]>(row.service_focus_json, []), layout: normalizeLetterLayout(json<LetterLayout | null>(row.layout_json, null), { subject: row.subject, bodyHtml: row.body_html, ctaText: row.cta_text ?? undefined, ctaUrl: row.cta_url ?? undefined, signature: row.signature }) } }
+function qrTarget(layout: LetterLayout | null) { const raw = layout?.blocks.find((item) => item.type === "qr")?.url; return normalizeExternalUrl(raw) || null }
+function secureToken() { const bytes = crypto.getRandomValues(new Uint8Array(24)); return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("") }

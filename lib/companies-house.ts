@@ -189,6 +189,18 @@ export async function fetchCompanies(range: DateRangeKey): Promise<CompaniesResp
   }
 }
 
+export async function fetchRecentCompanyCount(apiKey: string, days = 30) {
+  const safeDays = Math.max(1, Math.min(90, Math.trunc(days)))
+  const end = format(new Date(), "yyyy-MM-dd")
+  const start = format(subDays(new Date(), safeDays - 1), "yyyy-MM-dd")
+  const payload = await fetchCompaniesHouse(apiKey, { start, end, size: 1 })
+  return {
+    count: payload.hits ?? payload.items?.length ?? 0,
+    start,
+    end,
+  }
+}
+
 async function fetchCompaniesByDay(
   apiKey: string,
   start: string,
