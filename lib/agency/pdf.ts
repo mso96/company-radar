@@ -2,7 +2,7 @@ export interface BrowserPdfBinding { quickAction(action: "pdf", input: { html: s
 
 export async function renderA4Pdf(browser: BrowserPdfBinding, letterHtml: string) {
   const html = `<!doctype html><html><head><meta charset="utf-8"><style>@page{size:A4 portrait;margin:12mm}html,body{margin:0;padding:0;background:#fff}body{width:186mm}article{box-sizing:border-box!important;width:186mm!important;max-width:186mm!important;min-height:273mm!important;padding:10mm!important;overflow:hidden!important}</style></head><body>${letterHtml}</body></html>`
-  const response = await browser.quickAction("pdf", { html, pdfOptions: { format: "A4", printBackground: true, displayHeaderFooter: false, preferCSSPageSize: true, margin: { top: "0", right: "0", bottom: "0", left: "0" } } })
+  const response = await browser.quickAction("pdf", { html, pdfOptions: { format: "a4", landscape: false, scale: 1, printBackground: true, displayHeaderFooter: false, preferCSSPageSize: true, margin: { top: "0px", right: "0px", bottom: "0px", left: "0px" } } })
   if (!response.ok) throw new Error(`PDF rendering failed (${response.status}).`)
   const pdf = await response.arrayBuffer()
   const pages = (new TextDecoder("latin1").decode(pdf).match(/\/Type\s*\/Page\b/g) ?? []).length
