@@ -15,7 +15,7 @@ export const FRANKK_LETTER_PRODUCT = {
 } as const
 
 export class FrankkError extends Error {
-  constructor(message: string, readonly submissionUnknown = false, readonly status?: number) {
+  constructor(message: string, readonly submissionUnknown = false, readonly status?: number, readonly operation?: string) {
     super(message)
     this.name = "FrankkError"
   }
@@ -100,11 +100,11 @@ export class FrankkClient {
   private async json(path: string, options: { method: string; body?: unknown; safe?: boolean; mutation?: boolean; auth?: boolean }): Promise<JsonRecord> {
     const response = await this.request(path, options)
     let payload: JsonRecord
-    try { payload = await response.json() as JsonRecord } catch { throw new FrankkError(`Frankk returned invalid JSON (${response.status}).`, options.mutation, response.status) }
-    if (!response.ok) throw new FrankkError(messageFrom(payload) ?? `Frankk request failed (${response.status}).`, options.mutation, response.status)
-    if (payload.success === false) throw new FrankkError(messageFrom(payload) ?? "Frankk rejected the request.", false, response.status)
+    try { payload = await response.json() as JsonRecord } catch { throw new FrankkError(`Frankk returned invalid JSON (${response.status}).`, options.mutation, response.status, path) }
+    if (!response.ok) throw new FrankkError(messageFrom(payload) ?? `Frankk request failed (${response.status}).`, options.mutation, response.status, path)
+    if (payload.success === false) throw new FrankkError(messageFrom(payload) ?? "Frankk rejected the request.", false, response.status, path)
     const data = payload.data
-    if (data === null || data === undefined) throw new FrankkError(messageFrom(payload) ?? "Frankk returned no data for this request.", false, response.status)
+    if (data === null || data === undefined) throw new FrankkError(messageFrom(payload) ?? "Frankk returned no data for this request.", false, response.status, path)
     return data as JsonRecord
   }
 

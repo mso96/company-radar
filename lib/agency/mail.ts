@@ -132,14 +132,18 @@ export async function createMailBatchFromLeads(db: D1Database, input: { workspac
 
 export async function createTestMailBatch(db: D1Database, input: { workspaceId: string; userId: string; campaignId: string; templateId: string; recipient: ManualRecipient }) {
   const recipient = normalizeManualRecipient(input.recipient)
-  const campaign = await db.prepare(`SELECT id FROM agency_radars WHERE id=?1 AND workspace_id=?2 AND mail_template_id=?3 AND archived_at IS NULL`).bind(input.campaignId, input.workspaceId, input.templateId).first()
+  const campaign = await db.prepare(`SELECT id,name,mail_template_id FROM agency_radars WHERE id=?1 AND workspace_id=?2 AND mail_template_id=?3 AND archived_at IS NULL`).bind(input.campaignId, input.workspaceId, input.templateId).first<{ id: string; name: string; mail_template_id: string }>()
   if (!campaign) throw new Error("This campaign letter is no longer available.")
-  const template = await db.prepare(`SELECT id,layout_json FROM agency_letter_templates WHERE id=?1 AND workspace_id=?2 AND COALESCE(is_campaign_snapshot,0)=1`).bind(input.templateId, input.workspaceId).first<{ id: string; layout_json: string | null }>()
+  const currentTemplate = await db.prepare(`SELECT id,layout_json,COALESCE(is_campaign_snapshot,0) AS is_campaign_snapshot FROM agency_letter_templates WHERE id=?1 AND workspace_id=?2`).bind(input.templateId, input.workspaceId).first<{ id: string; layout_json: string | null; is_campaign_snapshot: number }>()
+  if (!currentTemplate) throw new Error("This campaign letter is no longer available.")
+  const effectiveTemplateId = currentTemplate.is_campaign_snapshot ? currentTemplate.id : await createCampaignTemplateSnapshot(db, input.workspaceId, currentTemplate.id, campaign.name)
+  if (effectiveTemplateId !== campaign.mail_template_id) await db.prepare(`UPDATE agency_radars SET mail_template_id=?1,updated_at=?2 WHERE id=?3 AND workspace_id=?4 AND mail_template_id=?5`).bind(effectiveTemplateId, now(), input.campaignId, input.workspaceId, campaign.mail_template_id).run()
+  const template = effectiveTemplateId === currentTemplate.id ? currentTemplate : await db.prepare(`SELECT id,layout_json FROM agency_letter_templates WHERE id=?1 AND workspace_id=?2`).bind(effectiveTemplateId, input.workspaceId).first<{ id: string; layout_json: string | null }>()
   if (!template) throw new Error("This campaign does not have a saved letter snapshot.")
   const batchId = crypto.randomUUID(); const itemId = crypto.randomUUID(); const timestamp = now()
   const target = qrTarget(json<LetterLayout | null>(template.layout_json, null))
   await db.batch([
-    db.prepare(`INSERT INTO agency_mail_batches (id,workspace_id,template_id,radar_id,batch_kind,name,status,created_by_user_id,created_at,updated_at) VALUES (?1,?2,?3,?4,'test',?5,'pending_approval',?6,?7,?7)`).bind(batchId, input.workspaceId, input.templateId, input.campaignId, `Test letter · ${recipient.name}`, input.userId, timestamp),
+    db.prepare(`INSERT INTO agency_mail_batches (id,workspace_id,template_id,radar_id,batch_kind,name,status,created_by_user_id,created_at,updated_at) VALUES (?1,?2,?3,?4,'test',?5,'pending_approval',?6,?7,?7)`).bind(batchId, input.workspaceId, effectiveTemplateId, input.campaignId, `Test letter · ${recipient.name}`, input.userId, timestamp),
     db.prepare(`INSERT INTO agency_mail_items (id,workspace_id,batch_id,lead_id,company_number,company_name,manual_recipient_json,address_json,status,suppression_reference,idempotency_key,qr_target_url,qr_tracking_token,created_at,updated_at) VALUES (?1,?2,?3,NULL,?4,?5,?6,?7,'pending_approval',?8,?9,?10,?11,?12,?12)`).bind(itemId, input.workspaceId, batchId, `MANUAL-TEST-${itemId.slice(0, 12).toUpperCase()}`, recipient.name, JSON.stringify(recipient), JSON.stringify(recipient.address), shortRef(), crypto.randomUUID(), target, target ? secureToken() : null, timestamp),
   ])
   return { batchId, itemId, recipient }

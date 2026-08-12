@@ -58,5 +58,13 @@ export async function POST(request: Request) {
     }
     await completeMailBatch(db, session.workspaceId, batchId, results.some((item) => item.status === "scheduled") ? "completed" : "failed")
     return NextResponse.json({ results })
-  } catch (error) { return agencyError(new Error(error instanceof FrankkError ? "The print service is temporarily unavailable. Your credits have not been changed." : error instanceof Error ? error.message : "Unable to schedule the letters.")) }
+  } catch (error) {
+    if (error instanceof FrankkError) console.error("mail approval provider failure", { operation: error.operation, status: error.status, submissionUnknown: error.submissionUnknown })
+    const message = error instanceof FrankkError
+      ? error.status === 403
+        ? "Physical sending is awaiting activation. Your preview is saved and your credits have not changed."
+        : "The print service is temporarily unavailable. Your credits have not been changed."
+      : error instanceof Error ? error.message : "Unable to schedule the letters."
+    return agencyError(new Error(message))
+  }
 }
