@@ -40,7 +40,7 @@ export default function AgencyMarketingPage() {
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-7 sm:px-6 lg:px-8">
         <MarketingHeader />
 
-        <section className="order-1 overflow-hidden border-2 bg-card shadow-[6px_6px_0_0_hsl(var(--foreground))]">
+        <section className="overflow-hidden border-2 bg-card shadow-[6px_6px_0_0_hsl(var(--foreground))]">
           <div className="grid gap-8 px-5 py-8 sm:px-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:px-10 lg:py-12">
             <div>
               <Badge className="border-2" variant="outline">Agency Mode · private beta</Badge>
@@ -65,14 +65,9 @@ export default function AgencyMarketingPage() {
           <div className="grid grid-cols-4 border-t-2"><div className="h-3 bg-[hsl(var(--chart-1))]" /><div className="h-3 bg-[hsl(var(--chart-2))]" /><div className="h-3 bg-[hsl(var(--chart-3))]" /><div className="h-3 bg-[hsl(var(--chart-4))]" /></div>
         </section>
 
-        <section id="for-who" className="order-3 scroll-mt-6">
-          <div className="mb-4"><p className="text-sm font-bold uppercase tracking-wide text-muted-foreground">For who</p><h2 className="mt-1 text-3xl font-black">For anyone who wants to win newly formed companies as clients.</h2><p className="mt-2 max-w-2xl text-muted-foreground">If new businesses need your service, Agency Mode helps you find the right ones and reach them with a relevant letter at the right moment.</p></div>
-          <div className="grid gap-4 md:grid-cols-2">
-            {audiences.map(({ name, description, href, action, icon: Icon }) => <Card key={name}><CardHeader><div className="mb-2 flex size-10 items-center justify-center border-2 bg-[hsl(var(--chart-3))]"><Icon className="size-5" /></div><CardTitle>{name}</CardTitle><CardDescription>{description}</CardDescription></CardHeader><CardContent><Button asChild variant="outline"><Link href={href}>{action} <ArrowRight className="size-4" /></Link></Button></CardContent></Card>)}
-          </div>
-        </section>
+        <AgencyWaitlist />
 
-        <section className="order-2 scroll-mt-6" aria-labelledby="example-letter-heading">
+        <section className="scroll-mt-6" aria-labelledby="example-letter-heading">
           <div className="mb-4">
             <div className="flex flex-wrap items-center gap-2">
               <p className="text-sm font-bold uppercase tracking-wide text-muted-foreground">Physical letter preview</p>
@@ -131,7 +126,14 @@ export default function AgencyMarketingPage() {
           </Card>
         </section>
 
-        <section id="how-it-works" className="order-4 scroll-mt-6">
+        <section id="for-who" className="scroll-mt-6">
+          <div className="mb-4"><p className="text-sm font-bold uppercase tracking-wide text-muted-foreground">For who</p><h2 className="mt-1 text-3xl font-black">For anyone who wants to win newly formed companies as clients.</h2><p className="mt-2 max-w-2xl text-muted-foreground">If new businesses need your service, Agency Mode helps you find the right ones and reach them with a relevant letter at the right moment.</p></div>
+          <div className="grid gap-4 md:grid-cols-2">
+            {audiences.map(({ name, description, href, action, icon: Icon }) => <Card key={name}><CardHeader><div className="mb-2 flex size-10 items-center justify-center border-2 bg-[hsl(var(--chart-3))]"><Icon className="size-5" /></div><CardTitle>{name}</CardTitle><CardDescription>{description}</CardDescription></CardHeader><CardContent><Button asChild variant="outline"><Link href={href}>{action} <ArrowRight className="size-4" /></Link></Button></CardContent></Card>)}
+          </div>
+        </section>
+
+        <section id="how-it-works" className="scroll-mt-6">
           <div className="mb-4"><p className="text-sm font-bold uppercase tracking-wide text-muted-foreground">How it works</p><h2 className="mt-1 text-3xl font-black">From signal to letter.</h2></div>
           <div className="grid gap-4 md:grid-cols-3">
             <ProcessCard number="01" title="Choose your audience" text="SIC codes, city and company age." />
@@ -140,14 +142,13 @@ export default function AgencyMarketingPage() {
           </div>
         </section>
 
-        <section id="sector-radars" className="order-5 scroll-mt-6">
+        <section id="sector-radars" className="scroll-mt-6">
           <div className="mb-4"><p className="text-sm font-bold uppercase tracking-wide text-muted-foreground">Target company profiles</p><h2 className="mt-1 text-3xl font-black">Choose the companies you want to reach.</h2><p className="mt-2 max-w-2xl text-muted-foreground">Start with a profile of newly incorporated companies, then customise the audience and letter in Agency Mode.</p></div>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {targetProfiles.map((profile) => <Card key={profile.title} className="flex flex-col"><CardHeader className="p-4"><CardTitle className="text-lg">{profile.title}</CardTitle><CardDescription className="text-sm leading-5">{profile.description}</CardDescription></CardHeader><CardContent className="mt-auto p-4 pt-0"><Link className="inline-flex items-center gap-2 text-sm font-black underline-offset-4 hover:underline" href={profile.href}>Reach this profile <ArrowRight className="size-4" /></Link></CardContent></Card>)}
           </div>
         </section>
 
-        <div className="order-6"><AgencyWaitlist /></div>
       </div>
     </main>
   )

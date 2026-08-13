@@ -56,6 +56,17 @@ async function storeCampaignPreview(input: { db: D1Database; env: AgencyRuntimeE
 }
 
 function validateUkAddress(postcode: string, country: string) {
-  if (country && !["GB", "UK", "United Kingdom"].includes(country)) throw new Error("Frankk v1 supports United Kingdom addresses only.")
+  const normalizedCountry = country.trim().toLowerCase().replace(/[._-]+/g, " ").replace(/\s+/g, " ")
+  const ukCountries = new Set([
+    "gb",
+    "gbr",
+    "uk",
+    "united kingdom",
+    "england",
+    "wales",
+    "scotland",
+    "northern ireland",
+  ])
+  if (normalizedCountry && !ukCountries.has(normalizedCountry)) throw new Error("Frankk v1 supports United Kingdom addresses only.")
   if (!/^[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}$/i.test(postcode.trim())) throw new Error("The registered office has an invalid UK postcode.")
 }
