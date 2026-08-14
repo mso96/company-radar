@@ -10,6 +10,10 @@ export interface AgencyRuntimeEnv {
   STRIPE_WEBHOOK_SECRET?: string
   STANNP_API_KEY?: string
   FRANKK_API_KEY?: string
+  GOOGLE_SHEETS_SPREADSHEET_ID?: string
+  GOOGLE_SHEETS_CLIENT_EMAIL?: string
+  GOOGLE_SHEETS_PRIVATE_KEY?: string
+  GOOGLE_SHEETS_RANGE?: string
   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?: string
   CLERK_SECRET_KEY?: string
   AGENCY_ASSETS?: R2Bucket
@@ -29,6 +33,10 @@ export async function getAgencyRuntimeEnv(): Promise<AgencyRuntimeEnv> {
     STRIPE_WEBHOOK_SECRET: context.env.STRIPE_WEBHOOK_SECRET ?? process.env.STRIPE_WEBHOOK_SECRET,
     STANNP_API_KEY: (context.env as unknown as { STANNP_API_KEY?: string }).STANNP_API_KEY ?? process.env.STANNP_API_KEY,
     FRANKK_API_KEY: (context.env as unknown as { FRANKK_API_KEY?: string }).FRANKK_API_KEY ?? process.env.FRANKK_API_KEY,
+    GOOGLE_SHEETS_SPREADSHEET_ID: (context.env as unknown as { GOOGLE_SHEETS_SPREADSHEET_ID?: string }).GOOGLE_SHEETS_SPREADSHEET_ID ?? process.env.GOOGLE_SHEETS_SPREADSHEET_ID,
+    GOOGLE_SHEETS_CLIENT_EMAIL: (context.env as unknown as { GOOGLE_SHEETS_CLIENT_EMAIL?: string }).GOOGLE_SHEETS_CLIENT_EMAIL ?? process.env.GOOGLE_SHEETS_CLIENT_EMAIL,
+    GOOGLE_SHEETS_PRIVATE_KEY: (context.env as unknown as { GOOGLE_SHEETS_PRIVATE_KEY?: string }).GOOGLE_SHEETS_PRIVATE_KEY ?? process.env.GOOGLE_SHEETS_PRIVATE_KEY,
+    GOOGLE_SHEETS_RANGE: (context.env as unknown as { GOOGLE_SHEETS_RANGE?: string }).GOOGLE_SHEETS_RANGE ?? process.env.GOOGLE_SHEETS_RANGE,
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: (context.env as unknown as { NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?: string }).NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
     CLERK_SECRET_KEY: (context.env as unknown as { CLERK_SECRET_KEY?: string }).CLERK_SECRET_KEY ?? process.env.CLERK_SECRET_KEY,
     AGENCY_ASSETS: (context.env as unknown as { AGENCY_ASSETS?: R2Bucket }).AGENCY_ASSETS,

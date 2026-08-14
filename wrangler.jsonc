@@ -9,6 +9,10 @@
     "enable_nodejs_process_v2"
   ],
   "keep_vars": true,
+  "vars": {
+    "GOOGLE_SHEETS_SPREADSHEET_ID": "1L8DkL4wzBlfaYvKU3aW3plwgcrJQFmMLlqnQin7SJLc",
+    "GOOGLE_SHEETS_RANGE": "A:D"
+  },
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"

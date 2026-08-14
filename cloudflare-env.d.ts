@@ -32,6 +32,10 @@ declare global {
     CLERK_SECRET_KEY?: string
     AGENCY_ASSETS?: R2Bucket
     FRANKK_API_KEY?: string
+    GOOGLE_SHEETS_SPREADSHEET_ID?: string
+    GOOGLE_SHEETS_CLIENT_EMAIL?: string
+    GOOGLE_SHEETS_PRIVATE_KEY?: string
+    GOOGLE_SHEETS_RANGE?: string
     BROWSER?: import("@/lib/agency/pdf").BrowserPdfBinding
   }
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { getAgencyRuntimeEnv, requireAgencyDatabase } from "@/lib/agency/runtime"
+import { syncAgencyWaitlistRowToGoogleSheets } from "@/lib/agency/waitlist-sheets"
 
 const MAX_BODY_BYTES = 4096
 const MAX_EMAIL_LENGTH = 254
@@ -20,9 +21,12 @@ export async function POST(request: Request) {
       throw new WaitlistRequestError("Enter a valid email address.", 400)
     }
 
-    const db = requireAgencyDatabase(await getAgencyRuntimeEnv())
+    const env = await getAgencyRuntimeEnv()
+    const db = requireAgencyDatabase(env)
     const timestamp = new Date().toISOString()
     await db.prepare(`INSERT INTO agency_waitlist (id, email, status, source, created_at, updated_at) VALUES (?1, ?2, 'waiting', 'agency_page', ?3, ?3) ON CONFLICT(email) DO NOTHING`).bind(crypto.randomUUID(), email, timestamp).run()
+    const row = await db.prepare("SELECT id, email, status, source, created_at FROM agency_waitlist WHERE email = ?1 AND sheet_synced_at IS NULL").bind(email).first<{ id: string; email: string; status: string; source: string; created_at: string }>()
+    if (row) await syncAgencyWaitlistRowToGoogleSheets(db, env, row)
     return NextResponse.json({ ok: true })
   } catch (error) {
     if (error instanceof WaitlistRequestError) return NextResponse.json({ error: error.message }, { status: error.status })
