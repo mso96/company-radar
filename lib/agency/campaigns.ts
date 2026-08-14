@@ -1,6 +1,10 @@
 import { listLeads, listRadars } from "@/lib/agency/db"
 import { getLetterTemplate, listMailBatches, listMailItems } from "@/lib/agency/mail"
-import type { CampaignDetail, CampaignLeadEligibility } from "@/lib/agency/types"
+import type { CampaignDetail, CampaignLeadEligibility, LetterLayout } from "@/lib/agency/types"
+
+function parseLayout(value: string | null): LetterLayout | null {
+  try { return value ? JSON.parse(value) as LetterLayout : null } catch { return null }
+}
 
 export async function getCampaignDetail(db: D1Database, workspaceId: string, campaignId: string): Promise<CampaignDetail | null> {
   const campaign = (await listRadars(db, workspaceId)).find((item) => item.id === campaignId)
@@ -28,12 +32,17 @@ export async function getCampaignDetail(db: D1Database, workspaceId: string, cam
   }
   const leads = allLeads.filter((lead) => lead.radarId === campaignId).map((lead) => ({ ...lead, eligibility: eligibility(lead.company.companyNumber) }))
   const totalQrScans = campaignMailItems.reduce((sum, item) => sum + (item.qrScanCount ?? 0), 0)
+  const template = campaign.mailTemplateId ? await getLetterTemplate(db, workspaceId, campaign.mailTemplateId) : null
+  const templateMeta = template ? await db.prepare(`SELECT created_at,source_template_id,layout_json FROM agency_letter_templates WHERE id=?1 AND workspace_id=?2`).bind(template.id, workspaceId).first<{ created_at: string; source_template_id: string | null; layout_json: string | null }>() : null
+  const sourceMeta = templateMeta?.source_template_id ? await db.prepare(`SELECT updated_at FROM agency_letter_templates WHERE id=?1 AND workspace_id=?2 AND archived_at IS NULL`).bind(templateMeta.source_template_id, workspaceId).first<{ updated_at: string }>() : null
+  const qrEnabled = Boolean(parseLayout(templateMeta?.layout_json ?? null)?.blocks.some((block) => block.type === "qr" && block.url))
   return {
     campaign,
-    template: campaign.mailTemplateId ? await getLetterTemplate(db, workspaceId, campaign.mailTemplateId) : null,
+    template,
     leads,
     batches,
     mailItems,
-    analytics: { totalQrScans, companiesScanned: campaignMailItems.filter((item) => (item.qrScanCount ?? 0) > 0).length },
+    analytics: { totalQrScans, companiesScanned: campaignMailItems.filter((item) => (item.qrScanCount ?? 0) > 0).length, qrEnabled },
+    templateStatus: { snapshotCreatedAt: templateMeta?.created_at ?? null, sourceUpdatedAt: sourceMeta?.updated_at ?? null, newerVersionAvailable: Boolean(sourceMeta?.updated_at && templateMeta?.created_at && new Date(sourceMeta.updated_at) > new Date(templateMeta.created_at)) },
   }
 }

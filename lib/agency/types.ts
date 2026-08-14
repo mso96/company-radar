@@ -166,5 +166,6 @@ export interface CampaignDetail {
   leads: CampaignLead[]
   batches: MailBatch[]
   mailItems: MailItem[]
-  analytics: { totalQrScans: number; companiesScanned: number }
+  analytics: { totalQrScans: number; companiesScanned: number; qrEnabled: boolean }
+  templateStatus: { snapshotCreatedAt: string | null; sourceUpdatedAt: string | null; newerVersionAvailable: boolean }
 }

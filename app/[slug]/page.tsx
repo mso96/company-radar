@@ -64,7 +64,7 @@ export default async function SectorLandingPage({ params }: { params: Promise<{ 
         <section className="grid gap-4 sm:grid-cols-3">
           <Stat icon={<Building2 />} label="Today’s public preview" value={companies.length} />
           <Stat icon={<Tags />} label="Tracked SIC codes" value={page.sicCodes.length} />
-          <Stat icon={<Radar />} label="For who" value={page.persona} />
+          <Stat icon={<Radar />} label="Who it’s for" value={page.persona} />
         </section>
         <Card>
           <CardHeader><CardTitle>Fresh company preview</CardTitle><CardDescription>Companies House data; listed for discovery, not as a complete market census.</CardDescription></CardHeader>

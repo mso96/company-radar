@@ -8,7 +8,7 @@ export const FRANKK_LETTER_PRODUCT = {
   pageOrientation: "Portrait",
   windowGummedCode: "C5NONWINDOW",
   stockWeightCode: "100UNCOAT",
-  mailClassCode: "Second",
+  mailClassCode: "Standard",
   isDuplex: false,
   isAdmail: false,
   isConfidential: false,
@@ -101,7 +101,9 @@ export class FrankkClient {
     const response = await this.request(path, options)
     let payload: JsonRecord
     try { payload = await response.json() as JsonRecord } catch { throw new FrankkError(`Frankk returned invalid JSON (${response.status}).`, options.mutation, response.status, path) }
-    if (!response.ok) throw new FrankkError(messageFrom(payload) ?? `Frankk request failed (${response.status}).`, options.mutation, response.status, path)
+    // A completed 4xx/5xx response is a known rejection, not an unknown
+    // submission. Only transport failures/timeouts below are ambiguous.
+    if (!response.ok) throw new FrankkError(messageFrom(payload) ?? `Frankk request failed (${response.status}).`, false, response.status, path)
     if (payload.success === false) throw new FrankkError(messageFrom(payload) ?? "Frankk rejected the request.", false, response.status, path)
     const data = payload.data
     if (data === null || data === undefined) throw new FrankkError(messageFrom(payload) ?? "Frankk returned no data for this request.", false, response.status, path)

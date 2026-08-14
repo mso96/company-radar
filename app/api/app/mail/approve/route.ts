@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     if (!sender) throw new Error("Complete the sender profile before mailing.")
     const items = await listPendingMailItems(db, session.workspaceId, batchId)
     if (!items.length) throw new Error("This batch has no pending letters.")
-    if (!items[0].previewed_at || !items[0].preview_opened_at) throw new Error("Open the PDF preview before approving this batch.")
+    if (!items[0].previewed_at || !items[0].preview_opened_at || !items[0].render_hash || items[0].preview_opened_render_hash !== items[0].render_hash) throw new Error("Open the latest PDF preview before approving this batch.")
     const customerBalance = await getCreditBalance(db, session.workspaceId)
     if (customerBalance < items.length) throw new Error(`Insufficient credits. You need ${items.length} credits and have ${customerBalance}.`)
     const env = await getAgencyRuntimeEnv(); const client = new FrankkClient(requireAgencyEnvValue(env.FRANKK_API_KEY, "FRANKK_API_KEY"))
@@ -24,6 +24,7 @@ export async function POST(request: Request) {
     const campaigns: Array<{ itemId: string; campaignId: string }> = []
     for (const item of items) {
       const campaign = await prepareFrankkCampaign({ db, env, client, workspaceId: session.workspaceId, itemId: item.id, sender, storePreview: false })
+      if (item.id === items[0].id && campaign.hash !== items[0].preview_opened_render_hash) throw new Error("The letter changed after preview. Open the latest PDF before approving.")
       await client.campaignDetails(campaign.campaignId)
       campaigns.push({ itemId: item.id, campaignId: campaign.campaignId })
     }
@@ -59,7 +60,7 @@ export async function POST(request: Request) {
     await completeMailBatch(db, session.workspaceId, batchId, results.some((item) => item.status === "scheduled") ? "completed" : "failed")
     return NextResponse.json({ results })
   } catch (error) {
-    if (error instanceof FrankkError) console.error("mail approval provider failure", { operation: error.operation, status: error.status, submissionUnknown: error.submissionUnknown })
+    if (error instanceof FrankkError) console.error("mail approval provider failure", { operation: error.operation, status: error.status, submissionUnknown: error.submissionUnknown, message: error.message })
     const message = error instanceof FrankkError
       ? error.status === 403
         ? "Physical sending is awaiting activation. Your preview is saved and your credits have not changed."

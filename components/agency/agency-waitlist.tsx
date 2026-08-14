@@ -53,7 +53,7 @@ export function AgencyWaitlist() {
                   <Input id="waitlist-email" name="email" type="email" inputMode="email" autoComplete="email" required maxLength={254} value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@company.com" aria-describedby="waitlist-privacy waitlist-error" className="h-12 min-w-0 flex-1" />
                   <Button type="submit" size="lg" disabled={status === "submitting" || !email.trim()} className="h-12 shrink-0">{status === "submitting" ? "Joining…" : "Join the waitlist"}<ArrowRight className="size-4" /></Button>
                 </div>
-                <div className="absolute -left-[9999px] top-auto size-px overflow-hidden" aria-hidden="true">
+                <div hidden aria-hidden="true">
                   <label htmlFor="waitlist-company">Company</label>
                   <input id="waitlist-company" name="company" type="text" autoComplete="off" tabIndex={-1} value={company} onChange={(event) => setCompany(event.target.value)} />
                 </div>

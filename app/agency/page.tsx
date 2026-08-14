@@ -58,7 +58,7 @@ export default function AgencyMarketingPage() {
               <div className="mt-3 space-y-3">
                 <HeroStep number="01" icon={Search} title="Choose your audience" text="Pick a ready-made segment or set your own SIC and location rules." />
                 <HeroStep number="02" icon={Mail} title="Make the letter yours" text="Start from a proven template, then edit the message, CTA and branding." />
-                <HeroStep number="03" icon={Check} title="Review before sending" text="New leads enter your queue. You approve every batch before postage." />
+                <HeroStep number="03" icon={Check} title="Review before sending" text="New matches appear inside each campaign. You approve every batch before postage." />
               </div>
             </div>
           </div>
@@ -127,7 +127,7 @@ export default function AgencyMarketingPage() {
         </section>
 
         <section id="for-who" className="scroll-mt-6">
-          <div className="mb-4"><p className="text-sm font-bold uppercase tracking-wide text-muted-foreground">For who</p><h2 className="mt-1 text-3xl font-black">For anyone who wants to win newly formed companies as clients.</h2><p className="mt-2 max-w-2xl text-muted-foreground">If new businesses need your service, Agency Mode helps you find the right ones and reach them with a relevant letter at the right moment.</p></div>
+          <div className="mb-4"><p className="text-sm font-bold uppercase tracking-wide text-muted-foreground">Who it&apos;s for</p><h2 className="mt-1 text-3xl font-black">For anyone who wants to win newly formed companies as clients.</h2><p className="mt-2 max-w-2xl text-muted-foreground">If new businesses need your service, Agency Mode helps you find the right ones and reach them with a relevant letter at the right moment.</p></div>
           <div className="grid gap-4 md:grid-cols-2">
             {audiences.map(({ name, description, href, action, icon: Icon }) => <Card key={name}><CardHeader><div className="mb-2 flex size-10 items-center justify-center border-2 bg-[hsl(var(--chart-3))]"><Icon className="size-5" /></div><CardTitle>{name}</CardTitle><CardDescription>{description}</CardDescription></CardHeader><CardContent><Button asChild variant="outline"><Link href={href}>{action} <ArrowRight className="size-4" /></Link></Button></CardContent></Card>)}
           </div>

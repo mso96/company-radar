@@ -27,10 +27,18 @@ export async function prepareFrankkCampaign(input: { db: D1Database; env: Agency
     if (input.storePreview && !state.provider_preview_key) return storeCampaignPreview({ db, env, client, workspaceId, itemId, campaignId: state.provider_campaign_id, hash, address, html })
     return { row, address, html, hash, recipientId: state.provider_recipient_id!, campaignId: state.provider_campaign_id, previewKey: state.provider_preview_key }
   }
-  if (state?.provider_campaign_id && state.render_hash !== hash) await client.delete(state.provider_campaign_id)
+  if (state?.render_hash && state.render_hash !== hash) {
+    if (state.provider_campaign_id) await client.delete(state.provider_campaign_id)
+    await db.prepare(`UPDATE agency_mail_items SET provider_campaign_id=NULL,provider_preview_key=NULL,previewed_at=NULL,preview_opened_at=NULL,preview_opened_render_hash=NULL,updated_at=?1 WHERE id=?2 AND workspace_id=?3`).bind(new Date().toISOString(), itemId, workspaceId).run()
+  }
 
   const pdf = await renderA4Pdf(env.BROWSER, html)
-  const recipientId = await client.createRecipient({ companyName: row.company_name, address, workspaceId, mailItemId: itemId, companyNumber: manualRecipient ? "manual_test" : row.company_number, suppressionReference: row.suppression_reference, recipientKind: manualRecipient ? "manual_test" : "company_lead" })
+  const recipientId = state?.provider_recipient_id && state.render_hash === hash
+    ? state.provider_recipient_id
+    : await client.createRecipient({ companyName: row.company_name, address, workspaceId, mailItemId: itemId, companyNumber: manualRecipient ? "manual_test" : row.company_number, suppressionReference: row.suppression_reference, recipientKind: manualRecipient ? "manual_test" : "company_lead" })
+  // Persist the recipient before campaign creation. If Frankk rejects the
+  // campaign payload, a retry reuses this recipient instead of duplicating it.
+  await updateFrankkMailItem(db, workspaceId, itemId, { status: state?.status ?? "draft", address, html, recipientId, renderHash: hash })
   const campaignId = await client.createCampaign({ name: `CR-${itemId}-${hash}`, recipientId, pdf })
   await updateFrankkMailItem(db, workspaceId, itemId, { status: "pending_approval", address, html, recipientId, campaignId, renderHash: hash, providerStatus: "Preview" })
   if (input.storePreview) return storeCampaignPreview({ db, env, client, workspaceId, itemId, campaignId, hash, address, html, row, recipientId })
