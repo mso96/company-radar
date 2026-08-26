@@ -3,6 +3,7 @@ import { FrankkClient } from "@/lib/agency/frankk"
 import { normalizeAccentColor, normalizeExternalUrl } from "@/lib/agency/branding"
 import { normalizeLetterLayout } from "@/lib/agency/letter-layout"
 import { qrSvgDataUrl } from "@/lib/agency/qr"
+import { DEFAULT_CREDIT_PACKS, WELCOME_CREDITS } from "@/lib/agency/pricing"
 
 const now = () => new Date().toISOString()
 const json = <T>(value: string | null | undefined, fallback: T) => { try { return value ? JSON.parse(value) as T : fallback } catch { return fallback } }
@@ -14,16 +15,12 @@ export async function getCreditBalance(db: D1Database, workspaceId: string) {
 
 export async function getCreditPacks(db: D1Database): Promise<CreditPack[]> {
   const row = await db.prepare(`SELECT value FROM app_config WHERE key = 'agency_credit_packs'`).first<{ value: string }>()
-  const packs = json<CreditPack[]>(row?.value, [
-    { id: "credits-25", name: "Starter", credits: 25, pricePence: 3750, active: true },
-    { id: "credits-100", name: "Growth", credits: 100, pricePence: 15000, active: true },
-    { id: "credits-500", name: "Scale", credits: 500, pricePence: 75000, active: true },
-  ])
+  const packs = json<CreditPack[]>(row?.value, DEFAULT_CREDIT_PACKS)
   return packs.filter((pack) => pack.active && pack.id && pack.credits > 0 && pack.pricePence > 0)
 }
 
 export async function ensureWelcomeCredit(db: D1Database, workspaceId: string) {
-  await db.prepare(`INSERT INTO agency_credit_ledger (id, workspace_id, delta, reason, reference_id, created_at) VALUES (?1, ?2, 1, 'welcome_credit', ?2, ?3) ON CONFLICT DO NOTHING`).bind(crypto.randomUUID(), workspaceId, now()).run()
+  await db.prepare(`INSERT INTO agency_credit_ledger (id, workspace_id, delta, reason, reference_id, created_at) VALUES (?1, ?2, ?3, 'welcome_credit', ?2, ?4) ON CONFLICT DO NOTHING`).bind(crypto.randomUUID(), workspaceId, WELCOME_CREDITS, now()).run()
 }
 
 export async function listCreditMovements(db: D1Database, workspaceId: string): Promise<CreditMovement[]> {
