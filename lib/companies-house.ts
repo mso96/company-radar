@@ -152,6 +152,7 @@ export async function fetchCompanies(range: DateRangeKey): Promise<CompaniesResp
       companies,
       insights: buildInsights(companies, companies.length),
       source: "demo",
+      latestAvailableDate: newestIncorporationDate(companies),
       dateRange,
     }
   }
@@ -185,8 +186,16 @@ export async function fetchCompanies(range: DateRangeKey): Promise<CompaniesResp
       exactTopCities
     ),
     source: "api",
+    latestAvailableDate: newestIncorporationDate(companiesForInsights),
     dateRange,
   }
+}
+
+function newestIncorporationDate(companies: CompanyRecord[]) {
+  return companies.reduce<string | null>((latest, company) => {
+    const date = company.incorporationDate
+    return !latest || date > latest ? date : latest
+  }, null)
 }
 
 export async function fetchRecentCompanyCount(apiKey: string, days = 30) {

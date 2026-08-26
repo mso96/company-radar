@@ -31,7 +31,7 @@ function normalizeBlock(value: unknown): LetterBlock | null {
   const item = value as Partial<LetterBlock>
   const allowed: LetterBlock["type"][] = ["brand", "recipient", "heading", "paragraph", "list", "image", "cta", "qr", "signature", "divider", "spacer", "footer"]
   if (!item.type || !allowed.includes(item.type)) return null
-  return { id: typeof item.id === "string" && item.id ? item.id : crypto.randomUUID(), type: item.type, content: cleanText(item.content, 5000), items: Array.isArray(item.items) ? item.items.map((entry) => cleanText(entry, 500)).filter(Boolean).slice(0, 20) : undefined, url: cleanText(item.url, 2000), alt: cleanText(item.alt, 300), align: ["left", "center", "right"].includes(item.align ?? "") ? item.align : "left", size: ["small", "medium", "large"].includes(item.size ?? "") ? item.size : undefined }
+  return { id: typeof item.id === "string" && item.id ? item.id : crypto.randomUUID(), type: item.type, content: cleanText(item.content, 5000), items: Array.isArray(item.items) ? item.items.map((entry) => cleanText(entry, 500)).filter(Boolean).slice(0, 20) : undefined, url: cleanText(item.url, 2000), imageUrl: cleanText(item.imageUrl, 2000), alt: cleanText(item.alt, 300), align: ["left", "center", "right"].includes(item.align ?? "") ? item.align : "left", size: ["small", "medium", "large"].includes(item.size ?? "") ? item.size : undefined }
 }
 
 function htmlToTextBlocks(html: string): LetterBlock[] {

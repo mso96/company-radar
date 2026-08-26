@@ -148,7 +148,7 @@ export interface CreateRadarInput {
 }
 
 export type LetterBlockType = "brand" | "recipient" | "heading" | "paragraph" | "list" | "image" | "cta" | "qr" | "signature" | "divider" | "spacer" | "footer"
-export interface LetterBlock { id: string; type: LetterBlockType; content?: string; items?: string[]; url?: string; alt?: string; align?: "left" | "center" | "right"; size?: "small" | "medium" | "large" }
+export interface LetterBlock { id: string; type: LetterBlockType; content?: string; items?: string[]; url?: string; imageUrl?: string; alt?: string; align?: "left" | "center" | "right"; size?: "small" | "medium" | "large" }
 export interface LetterLayout { version: 1; design?: LetterDesign; blocks: LetterBlock[] }
 export interface SenderProfile { agencyName: string; address: PostalAddress; replyEmail: string; website?: string; optOutText: string; logoUrl?: string; accentColor?: string; primaryColor?: string; textColor?: string; fontFamily?: string; headerAlignment?: "left" | "center" | "right" }
 export interface PostalAddress { address1: string; address2?: string; town: string; county?: string; postcode: string; country: string }

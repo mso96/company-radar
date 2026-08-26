@@ -52,6 +52,7 @@ export interface CompaniesResponse {
   companies: CompanyRecord[]
   insights: InsightSummary
   source: "api" | "demo"
+  latestAvailableDate: string | null
   dateRange: {
     start: string
     end: string

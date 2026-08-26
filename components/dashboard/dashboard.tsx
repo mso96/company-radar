@@ -122,6 +122,10 @@ export function Dashboard() {
 
   const companies = data?.companies ?? []
   const insights = data?.insights
+  const latestAvailableDate = data?.latestAvailableDate ?? null
+  const filingsBehindSelectedRange = Boolean(
+    data && latestAvailableDate && latestAvailableDate < data.dateRange.end
+  )
 
   const filteredCompanies = React.useMemo(() => {
     return companies
@@ -165,7 +169,9 @@ export function Dashboard() {
                   </p>
                   <div className="flex w-fit items-center gap-2 rounded-md border-2 bg-secondary px-3 py-1 text-xs font-semibold text-foreground">
                     <Sparkles />
-                    Live UK company formation intelligence
+                    {latestAvailableDate
+                      ? `Companies House · latest filing ${formatDisplayDate(latestAvailableDate)}`
+                      : "Live UK company formation intelligence"}
                   </div>
                 </div>
               </div>
@@ -211,6 +217,28 @@ export function Dashboard() {
         </header>
 
         {error ? <ErrorState error={error} onRetry={loadData} /> : null}
+
+        {!isLoading && data && filingsBehindSelectedRange ? (
+          <div className="flex items-start gap-3 rounded-md border-2 bg-secondary p-4 text-sm shadow-[3px_3px_0_0_hsl(var(--foreground))]">
+            <CalendarDays className="mt-0.5 size-5 shrink-0" />
+            <div>
+              <p className="font-bold">Showing the latest filings currently published by Companies House</p>
+              <p className="mt-1 text-muted-foreground">
+                The newest available incorporation date is {formatDisplayDate(latestAvailableDate!)}. Companies House can publish new registrations after a short delay; this page checks again automatically.
+              </p>
+            </div>
+          </div>
+        ) : null}
+
+        {!isLoading && data && !latestAvailableDate ? (
+          <div className="flex items-start gap-3 rounded-md border-2 bg-secondary p-4 text-sm shadow-[3px_3px_0_0_hsl(var(--foreground))]">
+            <CalendarDays className="mt-0.5 size-5 shrink-0" />
+            <div>
+              <p className="font-bold">No Companies House filings have been published for this date yet</p>
+              <p className="mt-1 text-muted-foreground">Try Last 7 Days for the newest available companies. This page checks for newly published records automatically.</p>
+            </div>
+          </div>
+        ) : null}
 
         {isLoading || !insights ? (
           <DashboardSkeleton />
@@ -819,6 +847,15 @@ function sicDescription(code: string) {
 
 function formatCompanyCount(count: number) {
   return `${count.toLocaleString()} ${count === 1 ? "company" : "companies"}`
+}
+
+function formatDisplayDate(value: string) {
+  return new Date(`${value}T00:00:00Z`).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  })
 }
 
 function truncateLabel(value: string) {
