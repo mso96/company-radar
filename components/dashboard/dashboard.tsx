@@ -158,7 +158,7 @@ export function Dashboard() {
         const order = left.localeCompare(right)
         return sortDirection === "asc" ? order : -order
       })
-  }, [companies, query, sortDirection, sortKey])
+  }, [companies, industryFilter, locationFilter, query, sicFilter, sortDirection, sortKey, statusFilter])
 
   const pageSize = 10
   const pageCount = Math.max(1, Math.ceil(filteredCompanies.length / pageSize))
@@ -296,6 +296,7 @@ export function Dashboard() {
               companies={pageCompanies}
               allCompanies={companies}
               shownTotal={filteredCompanies.length}
+              totalAvailable={insights.totalCompanies}
               query={query}
               setQuery={setQuery}
               statusFilter={statusFilter}
@@ -607,6 +608,7 @@ function CompaniesTable({
   companies,
   allCompanies,
   shownTotal,
+  totalAvailable,
   query,
   setQuery,
   statusFilter,
@@ -627,6 +629,7 @@ function CompaniesTable({
   companies: CompanyRecord[]
   allCompanies: CompanyRecord[]
   shownTotal: number
+  totalAvailable: number
   query: string
   setQuery: (query: string) => void
   statusFilter: string
@@ -647,6 +650,7 @@ function CompaniesTable({
   const statuses = Array.from(new Set(allCompanies.map((company) => company.status.toLowerCase()))).sort()
   const industries = Array.from(new Set(allCompanies.flatMap((company) => company.sicCodes))).sort()
   const locations = Array.from(new Set(allCompanies.map((company) => company.location).filter(Boolean))).sort()
+  const hasLocalFilters = Boolean(query || statusFilter !== "active" || industryFilter !== "all" || locationFilter !== "all" || sicFilter !== "all")
 
   return (
     <Card className="overflow-hidden">
@@ -656,7 +660,10 @@ function CompaniesTable({
             <CardTitle>Companies</CardTitle>
             <Badge variant="outline">{formatCompanyCount(shownTotal)}</Badge>
           </div>
-          <CardDescription className="mt-1">New UK companies · {statusFilter === "all" ? "all statuses" : statusFilter}</CardDescription>
+          <CardDescription className="mt-1">
+            New UK companies · {statusFilter === "all" ? "all statuses" : statusFilter}
+            {!hasLocalFilters && totalAvailable > shownTotal ? ` · ${formatCompanyCount(totalAvailable)} total in this range` : ""}
+          </CardDescription>
         </div>
         <div className="relative w-full sm:max-w-md">
           <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
