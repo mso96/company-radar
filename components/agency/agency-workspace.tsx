@@ -36,6 +36,22 @@ export function AgencyWorkspace({ session, radars, leads, events, watchlist, mem
   const [checkoutLoading, setCheckoutLoading] = React.useState<string | null>(null)
   const demo = isLocalAgencyDemoSession(session)
   const owner = session.role === "owner"
+  const validViews = React.useMemo(() => new Set(["campaigns", "companies", "sic-finder", "templates", "credits", "settings"]), [])
+  React.useEffect(() => {
+    const syncFromUrl = () => {
+      const view = new URL(window.location.href).searchParams.get("view") ?? "campaigns"
+      if (validViews.has(view)) setActiveView(view)
+    }
+    window.addEventListener("popstate", syncFromUrl)
+    return () => window.removeEventListener("popstate", syncFromUrl)
+  }, [validViews])
+  React.useEffect(() => {
+    const url = new URL(window.location.href)
+    const current = url.searchParams.get("view")
+    if (current === activeView || (!current && activeView === "campaigns")) return
+    url.searchParams.set("view", activeView)
+    window.history.pushState({ view: activeView }, "", `${url.pathname}?${url.searchParams.toString()}${url.hash}`)
+  }, [activeView])
   async function api(path: string, body?: unknown, method = "POST") { const controller = new AbortController(); const timer = window.setTimeout(() => controller.abort(), 20000); try { const response = await fetch(path, { method, headers: body ? { "Content-Type": "application/json" } : undefined, body: body ? JSON.stringify(body) : undefined, signal: controller.signal }); const payload = await response.json().catch(() => ({})); if (!response.ok) throw new Error(payload.error ?? "Request failed."); return payload } finally { window.clearTimeout(timer) } }
   const reload = () => location.reload()
   async function checkCampaign(radarId: string) { try { const result = await api(`/api/app/radars/${radarId}/scan`); setNotice(`Campaign checked. ${result.leads} new ${result.leads === 1 ? "company" : "companies"} found.`); reload() } catch (error) { setNotice(errorMessage(error)) } }
