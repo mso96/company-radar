@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { getCreditPacks } from "@/lib/agency/mail"
 import { agencyError, getAgencyRequestContext } from "@/lib/agency/request"
 import { getAgencyRuntimeEnv, requireAgencyEnvValue } from "@/lib/agency/runtime"
-import { getStripe } from "@/lib/stripe"
+import { createAgencyCheckoutSession } from "@/lib/stripe"
 import { CUSTOM_CREDIT_PRICE_PENCE } from "@/lib/agency/pricing"
 
 export async function POST(request: Request) {
@@ -16,10 +16,8 @@ export async function POST(request: Request) {
     }
     const credits = pack?.credits ?? requestedCredits!
     const pricePence = pack?.pricePence ?? credits * CUSTOM_CREDIT_PRICE_PENCE
-    const env = await getAgencyRuntimeEnv(); const stripe = getStripe(requireAgencyEnvValue(env.STRIPE_SECRET_KEY, "STRIPE_SECRET_KEY")); const origin = new URL(request.url).origin
-    const lineItem = pack?.stripePriceId ? { price: pack.stripePriceId, quantity: 1 } : { price_data: { currency: "gbp", unit_amount: pricePence, tax_behavior: "exclusive" as const, product_data: { name: `${credits} UK Company Radar mail credits`, description: "One credit covers one standard single-sided letter." } }, quantity: 1 }
-    const checkout = await stripe.checkout.sessions.create({ mode: "payment", line_items: [lineItem], customer_email: session.email, client_reference_id: session.workspaceId, automatic_tax: { enabled: true }, metadata: { kind: "agency_credit", workspace_id: session.workspaceId, pack_id: pack?.id ?? "custom", credits: String(credits) }, success_url: `${origin}/app?credits=success`, cancel_url: `${origin}/app?credits=cancelled` })
-    if (!checkout.url) throw new Error("Stripe did not return a checkout URL.")
-    return NextResponse.json({ url: checkout.url })
+    const env = await getAgencyRuntimeEnv(); const origin = new URL(request.url).origin
+    const url = await createAgencyCheckoutSession({ secretKey: requireAgencyEnvValue(env.STRIPE_SECRET_KEY, "STRIPE_SECRET_KEY"), origin, email: session.email, workspaceId: session.workspaceId, credits, packId: pack?.id ?? "custom", stripePriceId: pack?.stripePriceId, pricePence })
+    return NextResponse.json({ url })
   } catch (error) { return agencyError(error) }
 }
