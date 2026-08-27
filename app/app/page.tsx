@@ -13,7 +13,7 @@ export default async function AgencyPage({ searchParams }: { searchParams: Promi
   const session = await getCurrentAgencySession()
   if (!session) redirect("/agency-login")
   const query = await searchParams
-  const initialView = ["campaigns", "sic-finder", "templates", "credits", "settings"].includes(query.view ?? "") ? query.view : "campaigns"
+  const initialView = ["campaigns", "companies", "sic-finder", "templates", "credits", "settings"].includes(query.view ?? "") ? query.view : "campaigns"
   if (isLocalAgencyDemoSession(session)) {
     const catalog = getLocalAgencyCatalog()
     return <AgencyWorkspace session={session} {...getLocalAgencyDemoData()} segments={catalog.segments} templateLibrary={catalog.templates} templates={[{ id: "demo-template", workspaceId: session.workspaceId, name: "New company introduction", subject: "A quick idea for {{company_name}}", bodyHtml: "Hello {{company_name}},", ctaText: "Book a call", ctaUrl: "https://example.com", signature: "Northstar Digital", isDefault: true, createdAt: "2026-07-13T08:00:00.000Z" }]} sender={null} batches={[]} mailItems={[]} creditBalance={12} creditPacks={[]} creditMovements={[]} newCompaniesLast30Days={null} initialView={initialView} checkoutStatus={query.credits} />

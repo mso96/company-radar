@@ -23,7 +23,8 @@ export async function GET(request: Request) {
     ? (rangeParam as DateRangeKey)
     : "last7"
 
-  const cached = companiesCache.get(range)
+  const hasFilters = Boolean(searchParams.get("search") || searchParams.get("sic") || searchParams.get("location") || searchParams.get("page"))
+  const cached = hasFilters ? undefined : companiesCache.get(range)
   if (cached && cached.expiresAt > Date.now()) {
     return NextResponse.json(cached.data, {
       headers: {
@@ -34,11 +35,21 @@ export async function GET(request: Request) {
 
   try {
     const data = await fetchCompanies(range)
-    companiesCache.set(range, {
-      data,
-      expiresAt: Date.now() + RESPONSE_TTL_MS,
+    const search = (searchParams.get("search") ?? "").trim().toLowerCase()
+    const sic = (searchParams.get("sic") ?? "").trim()
+    const location = (searchParams.get("location") ?? "").trim().toLowerCase()
+    const page = Math.max(1, Number(searchParams.get("page") ?? "1") || 1)
+    const pageSize = Math.min(100, Math.max(10, Number(searchParams.get("pageSize") ?? "50") || 50))
+    const filtered = data.companies.filter((company) => {
+      const matchesSearch = !search || `${company.companyName} ${company.companyNumber}`.toLowerCase().includes(search)
+      const matchesSic = !sic || company.sicCodes.includes(sic)
+      const matchesLocation = !location || `${company.location} ${company.region}`.toLowerCase().includes(location)
+      return matchesSearch && matchesSic && matchesLocation
     })
-    return NextResponse.json(data, {
+    const start = (page - 1) * pageSize
+    const paged = { ...data, companies: filtered.slice(start, start + pageSize), insights: { ...data.insights, totalCompanies: filtered.length }, pagination: { page, pageSize, total: filtered.length, totalPages: Math.max(1, Math.ceil(filtered.length / pageSize)) } }
+    if (!hasFilters) companiesCache.set(range, { data: paged, expiresAt: Date.now() + RESPONSE_TTL_MS })
+    return NextResponse.json(paged, {
       headers: {
         "Cache-Control": "public, s-maxage=600, stale-while-revalidate=300",
       },
