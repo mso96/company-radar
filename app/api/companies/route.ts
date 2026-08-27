@@ -23,8 +23,9 @@ export async function GET(request: Request) {
     ? (rangeParam as DateRangeKey)
     : "last7"
 
-  const hasFilters = Boolean(searchParams.get("search") || searchParams.get("sic") || searchParams.get("location") || searchParams.get("page"))
-  const cached = hasFilters ? undefined : companiesCache.get(range)
+  const hasResultFilters = Boolean(searchParams.get("search") || searchParams.get("sic") || searchParams.get("location"))
+  const hasPagination = Boolean(searchParams.get("page") || searchParams.get("pageSize"))
+  const cached = hasResultFilters || hasPagination ? undefined : companiesCache.get(range)
   if (cached && cached.expiresAt > Date.now()) {
     return NextResponse.json(cached.data, {
       headers: {
@@ -47,8 +48,13 @@ export async function GET(request: Request) {
       return matchesSearch && matchesSic && matchesLocation
     })
     const start = (page - 1) * pageSize
-    const paged = { ...data, companies: filtered.slice(start, start + pageSize), insights: { ...data.insights, totalCompanies: filtered.length }, pagination: { page, pageSize, total: filtered.length, totalPages: Math.max(1, Math.ceil(filtered.length / pageSize)) } }
-    if (!hasFilters) companiesCache.set(range, { data: paged, expiresAt: Date.now() + RESPONSE_TTL_MS })
+    // The API response contains a bounded company sample for the table, while
+    // `insights.totalCompanies` is the authoritative Companies House hit count.
+    // Never replace that aggregate with the size of the in-memory sample: doing
+    // so made a 30-day window appear to contain only a few hundred companies.
+    const total = hasResultFilters ? filtered.length : data.insights.totalCompanies
+    const paged = { ...data, companies: filtered.slice(start, start + pageSize), insights: { ...data.insights, totalCompanies: total }, pagination: { page, pageSize, total, totalPages: Math.max(1, Math.ceil(total / pageSize)) } }
+    if (!hasResultFilters && !hasPagination) companiesCache.set(range, { data: paged, expiresAt: Date.now() + RESPONSE_TTL_MS })
     return NextResponse.json(paged, {
       headers: {
         "Cache-Control": "public, s-maxage=600, stale-while-revalidate=300",

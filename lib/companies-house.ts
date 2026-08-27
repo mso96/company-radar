@@ -150,20 +150,9 @@ export async function fetchCompanies(range: DateRangeKey): Promise<CompaniesResp
   const dateRange = getDateRange(range)
 
   if (!apiKey) {
-    if (process.env.NODE_ENV === "production") {
-      throw new Error(
-        "COMPANIES_HOUSE_API_KEY is missing in the production runtime environment."
-      )
-    }
-
-    const companies = getDemoCompanies(dateRange.end)
-    return {
-      companies,
-      insights: buildInsights(companies, companies.length),
-      source: "demo",
-      latestAvailableDate: newestIncorporationDate(companies),
-      dateRange,
-    }
+    throw new Error(
+      "COMPANIES_HOUSE_API_KEY is not configured. Live Companies House data is unavailable until the server key is added."
+    )
   }
 
   const dailyResults = await fetchCompaniesByDay(
@@ -362,7 +351,7 @@ async function fetchCompaniesHouse(
       break
     }
 
-    await sleep(250 * (attempt + 1))
+    await sleep(retryDelay(response, attempt, 250))
   }
 
   throw new Error(
@@ -472,7 +461,7 @@ async function fetchCompaniesHouseDocument(apiKey: string, url: string): Promise
     if (response.status === 404) return {}
     if (response.status === 401) throw new Error("Companies House rejected the API key.")
     if ((response.status < 500 && response.status !== 429) || attempt === MAX_COMPANIES_HOUSE_RETRIES - 1) break
-    await sleep(500 * (attempt + 1))
+    await sleep(retryDelay(response, attempt, 500))
   }
   throw new Error(`Companies House request failed with status ${lastStatus}.`)
 }
@@ -485,6 +474,17 @@ function itemsFrom(payload: Record<string, unknown>) {
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+function retryDelay(response: Response, attempt: number, baseMs: number) {
+  const retryAfter = response.headers.get("retry-after")
+  if (retryAfter) {
+    const seconds = Number(retryAfter)
+    if (Number.isFinite(seconds) && seconds >= 0) return Math.min(10_000, seconds * 1000)
+    const date = Date.parse(retryAfter)
+    if (Number.isFinite(date)) return Math.min(10_000, Math.max(0, date - Date.now()))
+  }
+  return Math.min(10_000, baseMs * 2 ** attempt)
 }
 
 function normalizeCompany(item: CompaniesHouseItem): CompanyRecord {
@@ -615,35 +615,6 @@ function inferRegion(location: string) {
 function findKeywords(companyName: string) {
   const normalized = companyName.toLowerCase()
   return KEYWORDS.filter((keyword) => normalized.includes(keyword.toLowerCase()))
-}
-
-function getDemoCompanies(baseDate: string): CompanyRecord[] {
-  const seeds = [
-    ["NOVA AI LABS LTD", "16240001", "62012", "London, EC1A", "London"],
-    ["BRIGHT DIGITAL STUDIO LTD", "16240002", "74100", "Brighton, BN1", "South East"],
-    ["CAPITAL PROPERTY VENTURES LTD", "16240003", "68100", "Manchester, M1", "North West"],
-    ["CIVIC TECH PARTNERS LTD", "16240004", "62020", "Leeds, LS1", "Yorkshire and The Humber"],
-    ["GREENFIELD CAPITAL HOLDINGS LTD", "16240005", "64209", "Bristol, BS1", "South West"],
-    ["SIGNAL AI SYSTEMS LTD", "16240006", "62012", "Cambridge, CB1", "East of England"],
-    ["FOUNDRY VENTURES LTD", "16240007", "70229", "Birmingham, B1", "West Midlands"],
-    ["KINETIC PROPERTY GROUP LTD", "16240008", "68100", "Cardiff, CF10", "Wales"],
-    ["NORTHSTAR DIGITAL LTD", "16240009", "73110", "Edinburgh, EH1", "Scotland"],
-    ["ATLAS TECH LABS LTD", "16240010", "62020", "Newcastle, NE1", "North East"],
-    ["MERCURY STUDIO WORKS LTD", "16240011", "74100", "Glasgow, G1", "Scotland"],
-    ["HARBOUR BUSINESS SUPPORT LTD", "16240012", "82990", "Liverpool, L1", "North West"],
-  ]
-
-  return seeds.map(([companyName, companyNumber, sicCode, location, region], index) => ({
-    companyName,
-    companyNumber,
-    incorporationDate: format(subDays(new Date(baseDate), index % 5), "yyyy-MM-dd"),
-    status: "active",
-    type: "ltd",
-    location,
-    region,
-    sicCodes: [sicCode],
-    matchedKeywords: findKeywords(companyName),
-  }))
 }
 
 export { KEYWORDS }
