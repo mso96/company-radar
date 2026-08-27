@@ -425,6 +425,12 @@ export async function fetchCompanyPostalAddress(apiKey: string, companyNumber: s
   return { address1, address2: String(office.address_line_2 ?? "").trim() || undefined, town, county: String(office.region ?? "").trim() || undefined, postcode, country: String(office.country ?? "GB").trim() || "GB" }
 }
 
+export async function fetchCompanyRecord(apiKey: string, companyNumber: string): Promise<CompanyRecord> {
+  const payload = await fetchCompaniesHouseDocument(apiKey, `https://api.company-information.service.gov.uk/company/${encodeURIComponent(companyNumber)}`)
+  if (!payload.company_number) throw new Error("Company was not found in Companies House.")
+  return normalizeCompany(payload as CompaniesHouseItem)
+}
+
 async function fetchCompaniesHouseDocument(apiKey: string, url: string): Promise<Record<string, unknown>> {
   let lastStatus = 0
   for (let attempt = 0; attempt < MAX_COMPANIES_HOUSE_RETRIES; attempt += 1) {

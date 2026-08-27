@@ -8,15 +8,23 @@ import type { CompanyRecord } from "@/lib/types"
 export async function scanWorkspaceRadars(db: D1Database, apiKey: string, session: AgencySession, onlyRadarId?: string) {
   const radars = (await listRadars(db, session.workspaceId)).filter((radar) => radar.isActive && (!onlyRadarId || radar.id === onlyRadarId))
   const today = new Date().toISOString().slice(0, 10)
+  const firstDate = new Date(Date.now() - 29 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
   let leads = 0
   for (const radar of radars) {
     const startedAt = new Date().toISOString()
     await db.prepare(`UPDATE agency_radars SET last_scan_started_at=?1,last_scan_error=NULL WHERE id=?2 AND workspace_id=?3`).bind(startedAt,radar.id,session.workspaceId).run()
     let radarLeads = 0
     try {
+    // Catch up missed scan days while keeping the first run bounded to 30 days.
+    // Company numbers are deduplicated by the existing lead constraint.
+    const lastCompletedDate = radar.lastScanCompletedAt?.slice(0, 10)
+    const nextScanDate = lastCompletedDate
+      ? new Date(new Date(`${lastCompletedDate}T00:00:00.000Z`).getTime() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+      : firstDate
+    const startDate = nextScanDate > today ? today : (nextScanDate < firstDate ? firstDate : nextScanDate)
     const companies = new Map<string, CompanyRecord>()
     for (const sicCode of radar.sicCodes) {
-      for (const company of await fetchCompaniesForSicAlerts(apiKey, today, today, sicCode)) companies.set(company.companyNumber, company)
+      for (const company of await fetchCompaniesForSicAlerts(apiKey, startDate, today, sicCode)) companies.set(company.companyNumber, company)
     }
     for (const company of companies.values()) {
       const reasons = matchRadar(radar, company)
