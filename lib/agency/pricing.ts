@@ -1,7 +1,7 @@
 import type { CreditPack } from "@/lib/agency/types"
 
 export const CUSTOM_CREDIT_PRICE_PENCE = 250
-export const WELCOME_CREDITS = 5
+export const WELCOME_CREDITS = 1
 
 export const DEFAULT_CREDIT_PACKS: CreditPack[] = [
   { id: "credits-25", name: "Starter", credits: 25, pricePence: 5900, active: true },
