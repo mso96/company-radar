@@ -76,6 +76,15 @@ interface CompaniesHouseItem {
 
 export interface CompaniesHousePostalAddress { address1: string; address2?: string; town: string; county?: string; postcode: string; country: string }
 
+export interface CompanyProfile {
+  company: CompanyRecord
+  registeredOffice: CompaniesHousePostalAddress | null
+  officers: Array<{ name: string; role: string; appointedOn?: string; resignedOn?: string }>
+  owners: Array<{ name: string; kind?: string; notifiedOn?: string; ceasedOn?: string }>
+  shares: { shareCapital: string | null; lastUpdated: string | null }
+  financials: { accountsNextDue: string | null; lastAccountsMadeUpTo: string | null; filingCount: number }
+}
+
 interface CompaniesHouseAdvancedSearchResponse {
   hits?: number
   items?: CompaniesHouseItem[]
@@ -429,6 +438,29 @@ export async function fetchCompanyRecord(apiKey: string, companyNumber: string):
   const payload = await fetchCompaniesHouseDocument(apiKey, `https://api.company-information.service.gov.uk/company/${encodeURIComponent(companyNumber)}`)
   if (!payload.company_number) throw new Error("Company was not found in Companies House.")
   return normalizeCompany(payload as CompaniesHouseItem)
+}
+
+export async function fetchCompanyProfile(apiKey: string, companyNumber: string): Promise<CompanyProfile> {
+  const base = `https://api.company-information.service.gov.uk/company/${encodeURIComponent(companyNumber)}`
+  const [companyPayload, officersPayload, ownersPayload, capitalPayload, filingsPayload] = await Promise.all([
+    fetchCompaniesHouseDocument(apiKey, base),
+    fetchCompaniesHouseDocument(apiKey, `${base}/officers?items_per_page=100`),
+    fetchCompaniesHouseDocument(apiKey, `${base}/persons-with-significant-control?items_per_page=100`),
+    fetchCompaniesHouseDocument(apiKey, `${base}/capital`),
+    fetchCompaniesHouseDocument(apiKey, `${base}/filing-history?items_per_page=1`),
+  ])
+  if (!companyPayload.company_number) throw new Error("Company was not found in Companies House.")
+  const company = normalizeCompany(companyPayload as CompaniesHouseItem)
+  const office = (companyPayload.registered_office_address ?? {}) as Record<string, unknown>
+  const registeredOffice = office.address_line_1 && office.locality && office.postal_code
+    ? { address1: String(office.address_line_1), address2: String(office.address_line_2 ?? "") || undefined, town: String(office.locality), county: String(office.region ?? "") || undefined, postcode: String(office.postal_code), country: String(office.country ?? "GB") }
+    : null
+  const officers = itemsFrom(officersPayload).map((item) => ({ name: String(item.name ?? "Unknown"), role: String(item.officer_role ?? "officer"), appointedOn: item.appointed_on ? String(item.appointed_on) : undefined, resignedOn: item.resigned_on ? String(item.resigned_on) : undefined }))
+  const owners = itemsFrom(ownersPayload).map((item) => ({ name: String(item.name ?? item.noc_name ?? "Unknown"), kind: item.kind ? String(item.kind) : undefined, notifiedOn: item.notified_on ? String(item.notified_on) : undefined, ceasedOn: item.ceased_on ? String(item.ceased_on) : undefined }))
+  const shareCapital = Array.isArray(capitalPayload.share_capital) ? capitalPayload.share_capital.map((item) => { const row = item as Record<string, unknown>; return `${String(row.share_class ?? "Shares")}: ${String(row.total_amount ?? row.number_of_shares ?? "—")}` }).join(" · ") || null : null
+  const accounts = (companyPayload.accounts ?? {}) as Record<string, unknown>
+  const lastAccounts = (accounts.last_accounts ?? {}) as Record<string, unknown>
+  return { company, registeredOffice, officers, owners, shares: { shareCapital, lastUpdated: capitalPayload.last_full_members_list_date ? String(capitalPayload.last_full_members_list_date) : null }, financials: { accountsNextDue: accounts.next_due ? String(accounts.next_due) : null, lastAccountsMadeUpTo: lastAccounts.made_up_to ? String(lastAccounts.made_up_to) : null, filingCount: Number(filingsPayload.total_count ?? 0) || 0 } }
 }
 
 async function fetchCompaniesHouseDocument(apiKey: string, url: string): Promise<Record<string, unknown>> {
