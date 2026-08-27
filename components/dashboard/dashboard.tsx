@@ -91,6 +91,10 @@ export function Dashboard() {
   const [sortKey, setSortKey] = React.useState<SortKey>("incorporationDate")
   const [sortDirection, setSortDirection] = React.useState<"asc" | "desc">("desc")
   const [page, setPage] = React.useState(1)
+  const [statusFilter, setStatusFilter] = React.useState("active")
+  const [industryFilter, setIndustryFilter] = React.useState("all")
+  const [locationFilter, setLocationFilter] = React.useState("all")
+  const [sicFilter, setSicFilter] = React.useState("all")
 
   const loadData = React.useCallback(async () => {
     setIsLoading(true)
@@ -118,7 +122,7 @@ export function Dashboard() {
 
   React.useEffect(() => {
     setPage(1)
-  }, [query, range])
+  }, [query, range, statusFilter, industryFilter, locationFilter, sicFilter])
 
   const companies = data?.companies ?? []
   const insights = data?.insights
@@ -140,7 +144,13 @@ export function Dashboard() {
           .join(" ")
           .toLowerCase()
 
-        return terms.includes(query.toLowerCase())
+        const status = company.status.toLowerCase()
+        const matchesStatus = statusFilter === "all" || status === statusFilter
+        const matchesIndustry = industryFilter === "all" || company.sicCodes.includes(industryFilter)
+        const matchesLocation = locationFilter === "all" || company.location === locationFilter
+        const matchesSic = sicFilter === "all" || company.sicCodes.includes(sicFilter)
+
+        return terms.includes(query.toLowerCase()) && matchesStatus && matchesIndustry && matchesLocation && matchesSic
       })
       .sort((a, b) => {
         const left = String(a[sortKey] ?? "")
@@ -284,9 +294,18 @@ export function Dashboard() {
 
             <CompaniesTable
               companies={pageCompanies}
+              allCompanies={companies}
               shownTotal={filteredCompanies.length}
               query={query}
               setQuery={setQuery}
+              statusFilter={statusFilter}
+              setStatusFilter={setStatusFilter}
+              industryFilter={industryFilter}
+              setIndustryFilter={setIndustryFilter}
+              locationFilter={locationFilter}
+              setLocationFilter={setLocationFilter}
+              sicFilter={sicFilter}
+              setSicFilter={setSicFilter}
               page={page}
               pageCount={pageCount}
               setPage={setPage}
@@ -586,9 +605,18 @@ function GrowthTrendCard({ data }: { data: CompaniesResponse["insights"]["regist
 
 function CompaniesTable({
   companies,
+  allCompanies,
   shownTotal,
   query,
   setQuery,
+  statusFilter,
+  setStatusFilter,
+  industryFilter,
+  setIndustryFilter,
+  locationFilter,
+  setLocationFilter,
+  sicFilter,
+  setSicFilter,
   page,
   pageCount,
   setPage,
@@ -597,9 +625,18 @@ function CompaniesTable({
   onSort,
 }: {
   companies: CompanyRecord[]
+  allCompanies: CompanyRecord[]
   shownTotal: number
   query: string
   setQuery: (query: string) => void
+  statusFilter: string
+  setStatusFilter: (value: string) => void
+  industryFilter: string
+  setIndustryFilter: (value: string) => void
+  locationFilter: string
+  setLocationFilter: (value: string) => void
+  sicFilter: string
+  setSicFilter: (value: string) => void
   page: number
   pageCount: number
   setPage: (page: number) => void
@@ -607,30 +644,39 @@ function CompaniesTable({
   sortDirection: "asc" | "desc"
   onSort: (key: SortKey) => void
 }) {
+  const statuses = Array.from(new Set(allCompanies.map((company) => company.status.toLowerCase()))).sort()
+  const industries = Array.from(new Set(allCompanies.flatMap((company) => company.sicCodes))).sort()
+  const locations = Array.from(new Set(allCompanies.map((company) => company.location).filter(Boolean))).sort()
+
   return (
-    <Card>
-      <CardHeader className="gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <Card className="overflow-hidden">
+      <CardHeader className="gap-4 border-b-2 bg-card sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <CardTitle>Companies</CardTitle>
-          <CardDescription>
-            {formatCompanyCount(shownTotal)} shown for exploration
-          </CardDescription>
+          <div className="flex items-center gap-3">
+            <CardTitle>Companies</CardTitle>
+            <Badge variant="outline">{formatCompanyCount(shownTotal)}</Badge>
+          </div>
+          <CardDescription className="mt-1">New UK companies · {statusFilter === "all" ? "all statuses" : statusFilter}</CardDescription>
         </div>
-        <div className="relative w-full sm:max-w-xs">
+        <div className="relative w-full sm:max-w-md">
           <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            className="pl-9"
-            placeholder="Search companies, regions, SIC"
-          />
+          <Input value={query} onChange={(event) => setQuery(event.target.value)} className="h-11 pl-9" placeholder="Search by company name or number" />
         </div>
       </CardHeader>
-      <CardContent className="flex flex-col gap-4">
+      <CardContent className="grid gap-0 p-0 lg:grid-cols-[220px_minmax(0,1fr)]">
+        <aside className="border-b-2 p-4 lg:border-b-0 lg:border-r-2">
+          <div className="mb-4 flex items-center justify-between"><p className="text-sm font-black uppercase tracking-wide">Filters</p><button type="button" className="text-xs font-bold underline" onClick={() => { setStatusFilter("active"); setIndustryFilter("all"); setLocationFilter("all"); setSicFilter("all"); setQuery("") }}>Clear</button></div>
+          <FilterSelect label="Status" value={statusFilter} onChange={setStatusFilter} options={statuses} fallback="active" />
+          <FilterSelect label="Industry / SIC" value={industryFilter} onChange={setIndustryFilter} options={industries} />
+          <FilterSelect label="Location" value={locationFilter} onChange={setLocationFilter} options={locations} />
+          <FilterSelect label="SIC code" value={sicFilter} onChange={setSicFilter} options={industries} />
+          <div className="mt-5 border-t-2 pt-4 text-xs leading-5 text-muted-foreground"><p className="font-bold text-foreground">Data available</p><p className="mt-1">Status, industry, SIC, incorporation date and registered location.</p><p className="mt-2">Ownership, directors, shares and financials are available on the Companies House record.</p></div>
+        </aside>
+        <div className="min-w-0 p-4">
         {companies.length === 0 ? (
           <EmptyState />
         ) : (
-          <Table>
+            <Table className="min-w-[820px]">
             <TableHeader>
               <TableRow>
                 <SortableHead
@@ -665,7 +711,7 @@ function CompaniesTable({
               {companies.map((company) => (
                 <TableRow key={company.companyNumber}>
                   <TableCell className="min-w-56 font-medium">
-                    {company.companyName}
+                    <a href={`https://find-and-update.company-information.service.gov.uk/company/${company.companyNumber}`} target="_blank" rel="noreferrer" className="font-bold underline-offset-4 hover:underline">{company.companyName}</a>
                   </TableCell>
                   <TableCell className="font-mono text-xs">
                     {company.companyNumber}
@@ -707,9 +753,14 @@ function CompaniesTable({
             />
           </Pagination>
         </div>
+        </div>
       </CardContent>
     </Card>
   )
+}
+
+function FilterSelect({ label, value, onChange, options, fallback }: { label: string; value: string; onChange: (value: string) => void; options: string[]; fallback?: string }) {
+  return <label className="mb-3 block text-xs font-bold"><span className="mb-1 block text-muted-foreground">{label}</span><select value={value} onChange={(event) => onChange(event.target.value)} className="h-9 w-full border-2 bg-background px-2 text-sm font-medium"><option value={fallback ?? "all"}>{fallback === "active" ? "Active" : "All"}</option>{options.filter((option) => option !== fallback).map((option) => <option key={option} value={option}>{option}</option>)}</select></label>
 }
 
 function SicBadge({ code }: { code: string }) {
