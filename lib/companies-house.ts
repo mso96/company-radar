@@ -47,7 +47,10 @@ const SAMPLE_SIZES: Record<DateRangeKey, number> = {
   today: 5000,
   yesterday: 5000,
   last7: 80,
-  last30: 40,
+  // The table uses per-day samples for the most recent six days. A larger
+  // daily page keeps current incorporation dates visible without relying on
+  // the advanced-search endpoint's unspecified global ordering.
+  last30: 1000,
 }
 
 const INSIGHT_DAY_LIMITS: Record<DateRangeKey, number> = {
@@ -164,18 +167,9 @@ export async function fetchCompanies(range: DateRangeKey): Promise<CompaniesResp
   )
   const companiesForInsights = dailyResults.flatMap((result) => result.companies)
   // The advanced-search endpoint does not guarantee a newest-first ordering.
-  // Query the most recent six days for the table so the first page never gets
-  // stuck on older records from the beginning of a 30-day window. The full
-  // range hit count remains authoritative for the summary cards.
-  const recentTableDays = range === "last30" ? 5 : range === "last7" ? 6 : 0
-  const recentTableStart = format(subDays(parseISO(dateRange.end), recentTableDays), "yyyy-MM-dd")
-  const tableResult = await fetchCompaniesForRange(
-    apiKey,
-    recentTableStart,
-    dateRange.end,
-    1000
-  )
-  const companiesForTable = tableResult.companies
+  // Use the per-day pages above for the table so current incorporation dates
+  // are always represented instead of an older first page for the full range.
+  const companiesForTable = companiesForInsights
   const totalCompanies = dailyResults.reduce((sum, result) => sum + result.hits, 0)
   const registrationTrend = dailyResults
     .map((result) => ({ date: result.date, registrations: result.hits }))
