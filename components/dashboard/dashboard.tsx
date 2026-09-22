@@ -398,9 +398,9 @@ function StatsRow({ insights }: { insights: CompaniesResponse["insights"] }) {
       icon: Building2,
     },
     {
-      label: "Top City",
+      label: "Top City (tracked)",
       value: "London",
-      detail: `Number: ${londonCount.toLocaleString()}`,
+      detail: `Full-range count: ${londonCount.toLocaleString()}`,
       icon: MapPin,
     },
     {
@@ -412,7 +412,7 @@ function StatsRow({ insights }: { insights: CompaniesResponse["insights"] }) {
     {
       label: "Hot Sector",
       value: activityCount.toLocaleString(),
-      detail: `${topActivity} leads analyzed filings`,
+      detail: `${topActivity} in analyzed sample`,
       icon: Flame,
     },
   ]
@@ -525,7 +525,7 @@ function BusinessActivitiesCard({
       <CardHeader>
         <CardTitle>Top Business Activities</CardTitle>
         <CardDescription>
-          SIC activity descriptions counted from the selected date range
+          SIC activity descriptions counted from the analyzed live sample
         </CardDescription>
       </CardHeader>
       <CardContent>
