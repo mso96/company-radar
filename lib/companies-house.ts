@@ -163,13 +163,15 @@ export async function fetchCompanies(range: DateRangeKey): Promise<CompaniesResp
     INSIGHT_DAY_LIMITS[range]
   )
   const companiesForInsights = dailyResults.flatMap((result) => result.companies)
-  // Use a range query for the listing so the table is not limited to the
-  // small per-day samples used to calculate charts. The API still returns the
-  // authoritative hit count separately; this bounded page keeps the Worker
-  // response predictable while showing substantially more real records.
+  // The advanced-search endpoint does not guarantee a newest-first ordering.
+  // Query the most recent six days for the table so the first page never gets
+  // stuck on older records from the beginning of a 30-day window. The full
+  // range hit count remains authoritative for the summary cards.
+  const recentTableDays = range === "last30" ? 5 : range === "last7" ? 6 : 0
+  const recentTableStart = format(subDays(parseISO(dateRange.end), recentTableDays), "yyyy-MM-dd")
   const tableResult = await fetchCompaniesForRange(
     apiKey,
-    dateRange.start,
+    recentTableStart,
     dateRange.end,
     1000
   )
