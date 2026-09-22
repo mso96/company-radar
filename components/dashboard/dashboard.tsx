@@ -144,7 +144,7 @@ export function Dashboard() {
         const status = company.status.toLowerCase()
         const matchesStatus = statusFilter === "all" || status === statusFilter
         const matchesIndustry = industryFilter === "all" || company.sicCodes.includes(industryFilter)
-        const matchesLocation = locationFilter === "all" || company.location === locationFilter
+        const matchesLocation = locationFilter === "all" || companyCity(company.location) === locationFilter
         const matchesSic = sicFilter === "all" || company.sicCodes.includes(sicFilter)
 
         return terms.includes(query.toLowerCase()) && matchesStatus && matchesIndustry && matchesLocation && matchesSic
@@ -632,7 +632,7 @@ function CompaniesTable({
 }) {
   const statuses = Array.from(new Set(allCompanies.map((company) => company.status.toLowerCase()))).sort()
   const industries = Array.from(new Set(allCompanies.flatMap((company) => company.sicCodes))).sort()
-  const locations = Array.from(new Set(allCompanies.map((company) => company.location).filter(Boolean))).sort()
+  const locations = Array.from(new Set(allCompanies.map((company) => companyCity(company.location)).filter(Boolean))).sort()
   const hasLocalFilters = Boolean(query || statusFilter !== "active" || industryFilter !== "all" || locationFilter !== "all" || sicFilter !== "all")
 
   return (
@@ -710,7 +710,7 @@ function CompaniesTable({
                   <TableCell>
                     <Badge variant="secondary">{company.status}</Badge>
                   </TableCell>
-                  <TableCell className="min-w-40">{company.location}</TableCell>
+                <TableCell className="min-w-40">{companyCity(company.location)}</TableCell>
                   <TableCell className="min-w-36">
                     <div className="flex flex-wrap gap-1">
                       {company.sicCodes.length ? (
@@ -888,6 +888,10 @@ function sicDescription(code: string) {
 
 function formatCompanyCount(count: number) {
   return `${count.toLocaleString()} ${count === 1 ? "company" : "companies"}`
+}
+
+function companyCity(location: string) {
+  return location.split(",")[0]?.trim() || "Unknown"
 }
 
 function truncateLabel(value: string) {
