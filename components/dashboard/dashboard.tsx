@@ -179,9 +179,7 @@ export function Dashboard() {
                   </p>
                   <div className="flex w-fit items-center gap-2 rounded-md border-2 bg-secondary px-3 py-1 text-xs font-semibold text-foreground">
                     <Sparkles />
-                    {latestAvailableDate
-                      ? `Companies House · latest filing ${formatDisplayDate(latestAvailableDate)}`
-                      : "Live UK company formation intelligence"}
+                    "Companies House · live data"
                   </div>
                 </div>
               </div>
