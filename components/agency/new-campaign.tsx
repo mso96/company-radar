@@ -8,7 +8,7 @@ import { SegmentRadarWizard } from "@/components/agency/agency-workspace"
 import { Button } from "@/components/ui/button"
 import type { AgencyLead, AgencySegment, AgencyTemplateLibraryItem, LetterTemplate, SenderProfile } from "@/lib/agency/types"
 
-type Values = { name: string; sicCodes: string[]; cities?: string[]; keywords?: string[]; deliveryFrequency?: "daily" | "weekly"; autoQueueLetters?: boolean; mailTemplateId?: string; templateLibraryId?: string; segmentSlug?: string; segmentSlugs?: string[]; serviceFocus?: string[]; companyAgeDays?: number; postcodePrefixes?: string[]; dailySendLimit?: number; monthlySendLimit?: number }
+type Values = { name: string; sicCodes: string[]; cities?: string[]; keywords?: string[]; deliveryFrequency?: "daily" | "weekly"; autoQueueLetters?: boolean; mailTemplateId?: string; templateLibraryId?: string; customLetter?: { name: string; subject: string; bodyHtml: string; ctaText?: string; ctaUrl?: string; signature: string; serviceFocus?: string[] }; segmentSlug?: string; segmentSlugs?: string[]; serviceFocus?: string[]; companyAgeDays?: number; postcodePrefixes?: string[]; dailySendLimit?: number; monthlySendLimit?: number }
 
 export function NewCampaign({ segments, templateLibrary, templates, sender, sampleCompany, initialTemplateId, initialSicCodes = [] }: { segments: AgencySegment[]; templateLibrary: AgencyTemplateLibraryItem[]; templates: LetterTemplate[]; sender: SenderProfile | null; sampleCompany?: AgencyLead["company"]; initialTemplateId?: string; initialSicCodes?: string[] }) {
   const router = useRouter()
@@ -18,12 +18,17 @@ export function NewCampaign({ segments, templateLibrary, templates, sender, samp
     setBusy(true); setNotice(null)
     try {
       let mailTemplateId = values.mailTemplateId
+      if (!mailTemplateId && values.customLetter) {
+        const custom = await fetch("/api/app/mail/templates", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...values.customLetter, isDefault: false }) })
+        const payload = await custom.json(); if (!custom.ok) throw new Error(payload.error ?? "Unable to save the custom letter.")
+        mailTemplateId = payload.id
+      }
       if (!mailTemplateId && values.templateLibraryId) {
         const clone = await fetch("/api/app/templates/clone", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sourceTemplateId: values.templateLibraryId }) })
         const payload = await clone.json(); if (!clone.ok) throw new Error(payload.error ?? "Unable to save the starter letter.")
         mailTemplateId = payload.id
       }
-      const response = await fetch("/api/app/radars", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...values, mailTemplateId, templateLibraryId: undefined, deliveryFrequency: "daily", autoQueueLetters: false, approvalRequired: true, eventTypes: ["company.incorporated"] }) })
+      const response = await fetch("/api/app/radars", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...values, mailTemplateId, customLetter: undefined, templateLibraryId: undefined, deliveryFrequency: "daily", autoQueueLetters: false, approvalRequired: true, eventTypes: ["company.incorporated"] }) })
       const payload = await response.json(); if (!response.ok) throw new Error(payload.error ?? "Unable to activate campaign.")
       sessionStorage.removeItem("company-radar-campaign-draft")
       router.push(`/app/campaigns/${payload.id}`); router.refresh()
